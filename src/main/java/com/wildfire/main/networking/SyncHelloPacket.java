@@ -39,7 +39,7 @@ import java.util.function.Function;
  * @since 5.0.0-Beta.2
  */
 public sealed interface SyncHelloPacket extends CustomPacketPayload {
-	/*static*/ int VERSION = 1;
+	/*static*/ int VERSION = 3;
 
 	int version();
 
@@ -57,7 +57,7 @@ public sealed interface SyncHelloPacket extends CustomPacketPayload {
 			this(VERSION);
 		}
 
-		public static final Type<Clientbound> ID = new CustomPacketPayload.Type<>(WildfireGender.id("clientbound/hello"));
+		public static final Type<Clientbound> ID = new CustomPacketPayload.Type<>(WildfireGender.id("extended/clientbound/hello"));
 		public static final StreamCodec<ByteBuf, Clientbound> CODEC = codec(Clientbound::new);
 
 		@Override
@@ -80,7 +80,7 @@ public sealed interface SyncHelloPacket extends CustomPacketPayload {
 			this(VERSION);
 		}
 
-		public static final Type<Serverbound> ID = new CustomPacketPayload.Type<>(WildfireGender.id("serverbound/hello"));
+		public static final Type<Serverbound> ID = new CustomPacketPayload.Type<>(WildfireGender.id("extended/serverbound/hello"));
 		public static final StreamCodec<ByteBuf, Serverbound> CODEC = codec(Serverbound::new);
 
 		@Override

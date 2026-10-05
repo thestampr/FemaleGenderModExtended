@@ -25,7 +25,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Events invoked when a player interacts with the {@link EquipmentSlot#CHEST chest slot} on an armor stand
+ * Events invoked when a player interacts with supported armor slots on an armor stand.
  */
 public final class ArmorStandInteractEvents {
 	private ArmorStandInteractEvents() {
@@ -33,11 +33,11 @@ public final class ArmorStandInteractEvents {
 	}
 
 	/**
-	 * Event invoked when a player equips an item onto an armor stand's {@link EquipmentSlot#CHEST chest slot}
+	 * Event invoked when a player equips an item onto an armor stand's chest or legs slot.
 	 */
-	public static final Event<EquipItem> EQUIP = EventFactory.createArrayBacked(EquipItem.class, listeners -> (player, item) -> {
+	public static final Event<EquipItem> EQUIP = EventFactory.createArrayBacked(EquipItem.class, listeners -> (player, slot, item) -> {
 		for(var listener : listeners) {
-			listener.onEquip(player, item);
+			listener.onEquip(player, slot, item);
 		}
 	});
 
@@ -57,7 +57,7 @@ public final class ArmorStandInteractEvents {
 
 	@FunctionalInterface
 	public interface EquipItem {
-		void onEquip(Player player, ItemStack item);
+		void onEquip(Player player, EquipmentSlot slot, ItemStack item);
 	}
 
 	@FunctionalInterface

@@ -22,7 +22,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.wildfire.api.IBreastArmorTexture;
 import com.wildfire.main.WildfireGender;
 import com.wildfire.main.uvs.UVLayout;
-import com.wildfire.main.uvs.UVQuad;
 import com.wildfire.mixins.accessors.EquipmentLayerRendererAccessor;
 import com.wildfire.render.WildfireModelRenderer.BreastModelBox;
 import com.wildfire.render.ducks.MissingTextureLogger;
@@ -50,47 +49,30 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.item.equipment.EquipmentAsset;
 import net.minecraft.world.item.equipment.trim.ArmorTrim;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
+
+import java.util.Objects;
 
 @Environment(EnvType.CLIENT)
 public class GenderArmorLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>> extends GenderLayer<S, M> {
+	private static final float REALISTIC_ARMOR_SCALE = 1.05f;
+	private static final float REALISTIC_ARMOR_HEIGHT_SCALE = 1.06f;
+	private static final float REALISTIC_ARMOR_SURFACE_OFFSET = -0.08f;
 
 	private final EquipmentLayerRenderer equipmentRenderer;
 	private final EquipmentAssetManager equipmentModelLoader;
-	protected static final BreastModelBox lTrim, rTrim;
-
 	@UnknownNullability("null until #resizeBox() is first called")
-	protected BreastModelBox lBoobArmor, rBoobArmor;
+	protected BreastModelBox lBoobArmor, rBoobArmor, lTrim, rTrim;
 	@UnknownNullability("null until first render pass")
 	private GenderRenderState genderRenderState;
+	private @Nullable UVLayout previousLeftArmorUV, previousRightArmorUV;
+	private boolean previousArmorRealistic;
 
 	@SuppressWarnings({"unused", "FieldMayBeFinal"}) // TODO fix this
 	private IBreastArmorTexture textureData = IBreastArmorTexture.DEFAULT;
 
-	static {
-		var left = new UVLayout(
-				new UVQuad(24, 21, 28, 26),  // EAST
-				new UVQuad(16, 21, 20, 26),  // WEST
-				new UVQuad(20, 17, 24, 21),  // DOWN
-				new UVQuad(20, 25, 24, 27),  // UP
-				new UVQuad(20, 21, 24, 26)   // NORTH
-		);
-
-		var right = new UVLayout(
-				new UVQuad(28, 21, 32, 26),  // EAST
-				new UVQuad(20, 21, 24, 26),  // WEST
-				new UVQuad(24, 17, 28, 21),  // DOWN
-				new UVQuad(24, 25, 28, 27),  // UP
-				new UVQuad(24, 21, 28, 26)   // NORTH
-		);
-
-		// apply a very slight delta to fix rare layering issues with the normal armor layer
-		// TODO look into how difficult it'd be to replicate Model render priority here
-		lTrim = new BreastModelBox(64, 32, -4F, 0.0F, 0F, 4, 5, 4, 0.001F, left);
-		rTrim = new BreastModelBox(64, 32, 0, 0.0F, 0F, 4, 5, 4, 0.001F, right);
-	}
-
-	private static boolean textureExists(Identifier texture) {
+	static boolean textureExists(Identifier texture) {
 		var texManager = Minecraft.getInstance().getTextureManager();
 		return !((MissingTextureLogger) texManager).wildfire_gender$missingTextures().contains(texture);
 	}
@@ -103,12 +85,6 @@ public class GenderArmorLayer<S extends HumanoidRenderState, M extends HumanoidM
 
 	@Override
 	public void submit(PoseStack matrixStack, SubmitNodeCollector queue, int light, S state, float limbAngle, float limbDistance) {
-		if(Minecraft.getInstance().level == null) {
-			// TODO rendering in a menu is harder to support as we only tick physics when in a world,
-			//		and entities rendered in the main menu are naturally not in a world
-			return;
-		}
-
 		this.genderRenderState = GenderRenderState.get(state);
 		if (this.genderRenderState == null) return;
 
@@ -167,21 +143,45 @@ public class GenderArmorLayer<S extends HumanoidRenderState, M extends HumanoidM
 		//rBoobArmor = new BreastModelBox(texSize.x(), texSize.y(), rUV.x(), rUV.y(), 0, 0.0F, 0F, dim.x(), dim.y(), 4, 0.0F, false);
 
 		// FIXME make this work with armor configs
-		if(this.lBoobArmor == null || this.rBoobArmor == null) {
-			lBoobArmor = new BreastModelBox(64, 32, -4F, 0.0F, 0F, 4, 5, 3, 0.0F, state.leftBreastArmorUVLayout);
-			rBoobArmor = new BreastModelBox(64, 32, 0, 0.0F, 0F, 4, 5, 3, 0.0F, state.rightBreastArmorUVLayout);
-		}
+		if(Objects.equals(previousLeftArmorUV, state.leftBreastArmorUVLayout)
+				&& Objects.equals(previousRightArmorUV, state.rightBreastArmorUVLayout)
+				&& previousArmorRealistic == state.realisticModel) return;
+
+		previousLeftArmorUV = state.leftBreastArmorUVLayout;
+		previousRightArmorUV = state.rightBreastArmorUVLayout;
+		previousArmorRealistic = state.realisticModel;
+		lBoobArmor = new BreastModelBox(64, 32, -4F, 0.0F, 0F, 4, 5, 3, 0.0F,
+				state.leftBreastArmorUVLayout, state.realisticModel);
+		rBoobArmor = new BreastModelBox(64, 32, 0, 0.0F, 0F, 4, 5, 3, 0.0F,
+				state.rightBreastArmorUVLayout, state.realisticModel);
+		// The slight delta and extra depth prevent trim z-fighting with the armor layer.
+		int trimDepth = state.realisticModel ? 3 : 4;
+		lTrim = new BreastModelBox(64, 32, -4F, 0.0F, 0F, 4, 5, trimDepth, 0.001F,
+				state.leftBreastArmorUVLayout, state.realisticModel);
+		rTrim = new BreastModelBox(64, 32, 0, 0.0F, 0F, 4, 5, trimDepth, 0.001F,
+				state.rightBreastArmorUVLayout, state.realisticModel);
 	}
 
 	@Override
 	protected void setupTransformations(S state, M model, PoseStack matrixStack, BreastSide side) {
 		super.setupTransformations(state, model, matrixStack, side);
-		if (genderRenderState.hasJacketLayer) {
+		// Classic armor historically followed the expanded jacket shell. On a rounded model that
+		// scales the attachment ring as well, making it protrude through the torso behind the neck.
+		if (genderRenderState.hasJacketLayer && !genderRenderState.realisticModel) {
 			matrixStack.translate(0, 0, -0.015f);
 			matrixStack.scale(1.05f, 1.05f, 1.05f);
 		}
-		matrixStack.translate(side.isLeft ? 0.001f : -0.001f, 0.015f, -0.015f);
-		matrixStack.scale(1.05f, 1, 1);
+		matrixStack.translate(side.isLeft ? 0.001f : -0.001f,
+				genderRenderState.realisticModel ? 0f : 0.015f, -0.015f);
+		// The realistic armor already receives a small forward offset. Scaling its X axis would
+		// widen the attachment ring beyond the torso, exposing it from the rear near the neck.
+		if(genderRenderState.realisticModel) {
+			// Model Y starts at the upper attachment. A small extension covers the
+			// under-breast edge without making the armored breast visibly taller.
+			matrixStack.scale(1f, REALISTIC_ARMOR_HEIGHT_SCALE, 1f);
+		} else {
+			matrixStack.scale(1.05f, 1, 1);
+		}
 	}
 
 	// TODO eventually expose some way for mods to override this, maybe through a default impl in IGenderArmor or similar
@@ -193,11 +193,21 @@ public class GenderArmorLayer<S extends HumanoidRenderState, M extends HumanoidM
 
 		var model = side.isLeft ? lBoobArmor : rBoobArmor;
 		var layer = RenderTypes.armorCutoutNoCull(texture);
-		queue.submitCustomGeometry(matrixStack, layer, new BreastRenderCommand(model, state, OverlayTexture.NO_OVERLAY, ARGB.opaque(color)));
+		SoftBodyDeformation deformation = deformationFor(side);
+		queue.submitCustomGeometry(matrixStack, layer,
+				new BreastRenderCommand(model, state, OverlayTexture.NO_OVERLAY, ARGB.opaque(color), deformation));
 
 		if(glint) {
-			renderGlint(matrixStack, queue, state, model);
+			renderGlint(matrixStack, queue, state, model, deformation);
 		}
+	}
+
+	@Override
+	protected SoftBodyDeformation deformationFor(BreastSide side) {
+		if(!realisticModel) return super.deformationFor(side);
+		// Enlarge only the free surface; the torso attachment remains fixed so the
+		// larger armor cannot reappear as a lump behind the neck.
+		return super.deformationFor(side, REALISTIC_ARMOR_SCALE, REALISTIC_ARMOR_SURFACE_OFFSET);
 	}
 
 	protected void renderArmorTrim(ResourceKey<EquipmentAsset> armorModel, PoseStack matrixStack, SubmitNodeCollector queue,
@@ -211,15 +221,18 @@ public class GenderArmorLayer<S extends HumanoidRenderState, M extends HumanoidM
 		TextureAtlasSprite sprite = ((EquipmentLayerRendererAccessor) equipmentRenderer).getTrimSpriteLookup().apply(key);
 
 		var layer = Sheets.armorTrimsSheet(trim.pattern().value().decal());
-		queue.submitCustomGeometry(matrixStack, layer, BreastRenderCommand.trim(model, state, sprite));
+		SoftBodyDeformation deformation = deformationFor(side);
+		queue.submitCustomGeometry(matrixStack, layer, BreastRenderCommand.trim(model, state, sprite, deformation));
 
 		if(glint) {
-			renderGlint(matrixStack, queue, state, model);
+			renderGlint(matrixStack, queue, state, model, deformation);
 		}
 	}
 
-	protected void renderGlint(PoseStack matrixStack, SubmitNodeCollector renderQueue, S state, BreastModelBox box) {
+	protected void renderGlint(PoseStack matrixStack, SubmitNodeCollector renderQueue, S state, BreastModelBox box,
+	                           SoftBodyDeformation deformation) {
 		var glintLayer = RenderTypes.armorEntityGlint();
-		renderQueue.submitCustomGeometry(matrixStack, glintLayer, new BreastRenderCommand(box, state, OverlayTexture.NO_OVERLAY, -1));
+		renderQueue.submitCustomGeometry(matrixStack, glintLayer,
+				new BreastRenderCommand(box, state, OverlayTexture.NO_OVERLAY, -1, deformation));
 	}
 }

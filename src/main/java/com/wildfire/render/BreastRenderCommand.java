@@ -28,6 +28,8 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.jetbrains.annotations.Nullable;
 
+import com.wildfire.main.uvs.UVDirection;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 @Environment(EnvType.CLIENT)
@@ -37,14 +39,33 @@ public record BreastRenderCommand(
 		int overlay,
 		int color,
 		int outline,
-		@Nullable UnaryOperator<VertexConsumer> consumerOperator
+	@Nullable UnaryOperator<VertexConsumer> consumerOperator,
+	SoftBodyDeformation deformation,
+	@Nullable Function<UVDirection, Integer> faceColors
 ) implements SubmitNodeCollector.CustomGeometryRenderer {
 	public BreastRenderCommand(WildfireModelRenderer.ModelBox model, LivingEntityRenderState state, int overlay, int color) {
-		this(model, state.lightCoords, overlay, color, state.outlineColor, null);
+		this(model, state, overlay, color, SoftBodyDeformation.NONE);
+	}
+
+	public BreastRenderCommand(WildfireModelRenderer.ModelBox model, LivingEntityRenderState state, int overlay,
+	                           int color, SoftBodyDeformation deformation) {
+		this(model, state.lightCoords, overlay, color, state.outlineColor, null, deformation, null);
+	}
+
+	public BreastRenderCommand(WildfireModelRenderer.ModelBox model, LivingEntityRenderState state, int overlay,
+	                           int color, SoftBodyDeformation deformation,
+	                           @Nullable Function<UVDirection, Integer> faceColors) {
+		this(model, state.lightCoords, overlay, color, state.outlineColor, null, deformation, faceColors);
 	}
 
 	public static BreastRenderCommand trim(WildfireModelRenderer.ModelBox model, LivingEntityRenderState state, TextureAtlasSprite trimSprite) {
-		return new BreastRenderCommand(model, state.lightCoords, OverlayTexture.NO_OVERLAY, -1, 0, trimSprite::wrap);
+		return trim(model, state, trimSprite, SoftBodyDeformation.NONE);
+	}
+
+	public static BreastRenderCommand trim(WildfireModelRenderer.ModelBox model, LivingEntityRenderState state,
+	                                        TextureAtlasSprite trimSprite, SoftBodyDeformation deformation) {
+		return new BreastRenderCommand(model, state.lightCoords, OverlayTexture.NO_OVERLAY, -1, 0,
+				trimSprite::wrap, deformation, null);
 	}
 
 	@Override
@@ -52,6 +73,6 @@ public record BreastRenderCommand(
 		if(consumerOperator != null) {
 			vertexConsumer = consumerOperator.apply(vertexConsumer);
 		}
-		GenderLayer.renderBox(model, matricesEntry, vertexConsumer, light, overlay, color);
+		BodyPartLayer.renderBox(model, matricesEntry, vertexConsumer, light, overlay, color, deformation, faceColors);
 	}
 }

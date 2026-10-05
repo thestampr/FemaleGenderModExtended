@@ -18,9 +18,10 @@
 
 package com.wildfire.main.networking;
 
-import com.mojang.datafixers.util.Function8;
+import com.mojang.datafixers.util.Function3;
 import com.wildfire.main.config.enums.Gender;
 import com.wildfire.main.entitydata.Breasts;
+import com.wildfire.main.entitydata.Butts;
 import com.wildfire.main.entitydata.PlayerConfig;
 import com.wildfire.main.uvs.UVDirection;
 import com.wildfire.main.uvs.UVLayout;
@@ -39,92 +40,125 @@ abstract class AbstractSyncPacket {
 	// to the underlying packet structure
 	protected static <T extends AbstractSyncPacket> StreamCodec<ByteBuf, T> codec(SyncPacketConstructor<T> constructor) {
 		return StreamCodec.composite(
-				UUIDUtil.STREAM_CODEC, p -> p.uuid,
-				Gender.CODEC, p -> p.gender,
-				ByteBufCodecs.FLOAT, p -> p.bustSize,
-				ByteBufCodecs.BOOL, p -> p.hurtSounds,
-				ByteBufCodecs.FLOAT, p -> p.voicePitch,
-				BreastPhysics.CODEC, p -> p.physics,
-				Breasts.CODEC, p -> p.breasts,
-				UV_LAYOUTS_CODEC, p -> p.uvLayouts,
+				CORE_PROFILE_CODEC, p -> p.core,
+				BREAST_SYNC_CODEC, p -> p.breast,
+				BUTT_SYNC_CODEC, p -> p.butt,
 				constructor
 		);
 	}
 
 	protected final UUID uuid;
-	protected final Gender gender;
-	protected final float bustSize;
-	protected final boolean hurtSounds;
-	protected final float voicePitch;
-	protected final BreastPhysics physics;
-	protected final Breasts breasts;
-	protected final UVLayouts uvLayouts;
+	protected final CoreProfile core;
+	protected final BreastSync breast;
+	protected final ButtSync butt;
 
-	protected AbstractSyncPacket(UUID uuid, Gender gender, float bustSize, boolean hurtSounds, float voicePitch, BreastPhysics physics, Breasts breasts, UVLayouts uvLayouts) {
-		this.uuid = uuid;
-		this.gender = gender;
-		this.bustSize = bustSize;
-		this.hurtSounds = hurtSounds;
-		this.voicePitch = voicePitch;
-		this.physics = physics;
-		this.breasts = breasts;
-		this.uvLayouts = uvLayouts;
+	protected AbstractSyncPacket(CoreProfile core, BreastSync breast, ButtSync butt) {
+		this.uuid = core.uuid;
+		this.core = core;
+		this.breast = breast;
+		this.butt = butt;
 	}
 
 	protected AbstractSyncPacket(PlayerConfig plr) {
-		this(plr.uuid, plr.getGender(), plr.getBustSize(), plr.hasHurtSounds(), plr.getVoicePitch(), new BreastPhysics(plr), plr.getBreasts(), UVLayouts.from(plr));
+		this(CoreProfile.from(plr), BreastSync.from(plr), ButtSync.from(plr));
 	}
 
 	// TODO add support for mannequins?
 	protected void updatePlayerFromPacket(PlayerConfig plr) {
-		plr.updateGender(gender);
-		plr.updateBustSize(bustSize);
-		plr.updateHurtSounds(hurtSounds);
-		plr.updateVoicePitch(voicePitch);
-		physics.applyTo(plr);
-		plr.getBreasts().copyFrom(breasts);
-		uvLayouts.applyTo(plr);
+		core.applyTo(plr);
+		breast.applyTo(plr);
+		butt.applyTo(plr);
 	}
 
-	protected record BreastPhysics(boolean physics, boolean showInArmor, float bounceMultiplier, float floppyMultiplier) {
-
-		public static final StreamCodec<ByteBuf, BreastPhysics> CODEC = StreamCodec.composite(
-				ByteBufCodecs.BOOL, BreastPhysics::physics,
-				ByteBufCodecs.BOOL, BreastPhysics::showInArmor,
-				ByteBufCodecs.FLOAT, BreastPhysics::bounceMultiplier,
-				ByteBufCodecs.FLOAT, BreastPhysics::floppyMultiplier,
-				BreastPhysics::new
-		);
-
-		private BreastPhysics(PlayerConfig plr) {
-			this(plr.hasBreastPhysics(), plr.showBreastsInArmor(), plr.getBounceMultiplier(), plr.getFloppiness());
+	protected record CoreProfile(UUID uuid, Gender gender, float bustSize, boolean hurtSounds, float voicePitch,
+	                             boolean realisticModel) {
+		private static CoreProfile from(PlayerConfig player) {
+			return new CoreProfile(player.uuid, player.getGender(), player.getBustSize(), player.hasHurtSounds(),
+					player.getVoicePitch(), player.usesRealisticModel());
 		}
 
-		private void applyTo(PlayerConfig plr) {
-			plr.updateBreastPhysics(physics);
-			plr.updateShowBreastsInArmor(showInArmor);
-			plr.updateBounceMultiplier(bounceMultiplier);
-			plr.updateFloppiness(floppyMultiplier);
+		private void applyTo(PlayerConfig player) {
+			player.updateGender(gender);
+			player.updateBustSize(bustSize);
+			player.updateHurtSounds(hurtSounds);
+			player.updateVoicePitch(voicePitch);
+			player.updateRealisticModel(realisticModel);
+		}
+	}
+
+	private static final StreamCodec<ByteBuf, CoreProfile> CORE_PROFILE_CODEC = StreamCodec.composite(
+			UUIDUtil.STREAM_CODEC, CoreProfile::uuid,
+			Gender.CODEC, CoreProfile::gender,
+			ByteBufCodecs.FLOAT, CoreProfile::bustSize,
+			ByteBufCodecs.BOOL, CoreProfile::hurtSounds,
+			ByteBufCodecs.FLOAT, CoreProfile::voicePitch,
+			ByteBufCodecs.BOOL, CoreProfile::realisticModel,
+			CoreProfile::new
+	);
+
+	protected record PhysicsSettings(boolean enabled, boolean showInArmor, float bounceMultiplier, float floppyMultiplier) {
+		private static final StreamCodec<ByteBuf, PhysicsSettings> CODEC = StreamCodec.composite(
+				ByteBufCodecs.BOOL, PhysicsSettings::enabled,
+				ByteBufCodecs.BOOL, PhysicsSettings::showInArmor,
+				ByteBufCodecs.FLOAT, PhysicsSettings::bounceMultiplier,
+				ByteBufCodecs.FLOAT, PhysicsSettings::floppyMultiplier,
+				PhysicsSettings::new
+		);
+
+		private static PhysicsSettings breast(PlayerConfig player) {
+			return new PhysicsSettings(player.hasBreastPhysics(), player.showBreastsInArmor(), player.getBounceMultiplier(), player.getFloppiness());
+		}
+
+		private static PhysicsSettings butt(PlayerConfig player) {
+			return new PhysicsSettings(player.hasButtPhysics(), player.showButtInArmor(), player.getButtBounceMultiplier(), player.getButtFloppiness());
+		}
+
+		private void applyToBreasts(PlayerConfig player) {
+			player.updateBreastPhysics(enabled);
+			player.updateShowBreastsInArmor(showInArmor);
+			player.updateBounceMultiplier(bounceMultiplier);
+			player.updateFloppiness(floppyMultiplier);
+		}
+
+		private void applyToButt(PlayerConfig player) {
+			player.updateButtPhysics(enabled);
+			player.updateShowButtInArmor(showInArmor);
+			player.updateButtBounceMultiplier(bounceMultiplier);
+			player.updateButtFloppiness(floppyMultiplier);
 		}
 	}
 
 	@FunctionalInterface
-	protected interface SyncPacketConstructor<T extends AbstractSyncPacket> extends Function8<UUID, Gender, Float, Boolean, Float, BreastPhysics, Breasts, UVLayouts, T> {
+	protected interface SyncPacketConstructor<T extends AbstractSyncPacket> extends Function3<CoreProfile, BreastSync, ButtSync, T> {
 	}
 
 	public record UVLayouts(Layer skin, Layer overlay) {
-		public static UVLayouts from(PlayerConfig plr) {
+		public static UVLayouts breasts(PlayerConfig plr) {
 			return new UVLayouts(
 					/*skin = */ new Layer(plr.getLeftBreastUVLayout().copy(), plr.getRightBreastUVLayout().copy()),
 					/*overlay = */ new Layer(plr.getLeftBreastOverlayUVLayout().copy(), plr.getRightBreastOverlayUVLayout().copy())
 			);
 		}
 
-		private void applyTo(PlayerConfig plr) {
+		public static UVLayouts butt(PlayerConfig plr) {
+			return new UVLayouts(
+					new Layer(plr.getLeftButtUVLayout().copy(), plr.getRightButtUVLayout().copy()),
+					new Layer(plr.getLeftButtOverlayUVLayout().copy(), plr.getRightButtOverlayUVLayout().copy())
+			);
+		}
+
+		private void applyToBreasts(PlayerConfig plr) {
 			plr.updateLeftBreastUVLayout(skin.left);
 			plr.updateRightBreastUVLayout(skin.right);
 			plr.updateLeftBreastOverlayUVLayout(overlay.left);
 			plr.updateRightBreastOverlayUVLayout(overlay.right);
+		}
+
+		private void applyToButt(PlayerConfig plr) {
+			plr.updateLeftButtUVLayout(skin.left);
+			plr.updateRightButtUVLayout(skin.right);
+			plr.updateLeftButtOverlayUVLayout(overlay.left);
+			plr.updateRightButtOverlayUVLayout(overlay.right);
 		}
 
 		public record Layer(UVLayout left, UVLayout right) {
@@ -149,4 +183,43 @@ abstract class AbstractSyncPacket {
 			UV_LAYER_CODEC, UVLayouts::overlay,
 			UVLayouts::new
 	);
+
+	protected record BreastSync(PhysicsSettings physics, Breasts appearance, UVLayouts uvLayouts) {
+		private static BreastSync from(PlayerConfig player) {
+			return new BreastSync(PhysicsSettings.breast(player), player.getBreasts(), UVLayouts.breasts(player));
+		}
+
+		private void applyTo(PlayerConfig player) {
+			physics.applyToBreasts(player);
+			player.getBreasts().copyFrom(appearance);
+			uvLayouts.applyToBreasts(player);
+		}
+	}
+
+	private static final StreamCodec<ByteBuf, BreastSync> BREAST_SYNC_CODEC = StreamCodec.composite(
+			PhysicsSettings.CODEC, BreastSync::physics,
+			Breasts.CODEC, BreastSync::appearance,
+			UV_LAYOUTS_CODEC, BreastSync::uvLayouts,
+			BreastSync::new
+	);
+
+	protected record ButtSync(PhysicsSettings physics, Butts appearance, UVLayouts uvLayouts) {
+		private static ButtSync from(PlayerConfig player) {
+			return new ButtSync(PhysicsSettings.butt(player), player.getButts(), UVLayouts.butt(player));
+		}
+
+		private void applyTo(PlayerConfig player) {
+			physics.applyToButt(player);
+			player.getButts().copyFrom(appearance);
+			uvLayouts.applyToButt(player);
+		}
+	}
+
+	private static final StreamCodec<ByteBuf, ButtSync> BUTT_SYNC_CODEC = StreamCodec.composite(
+			PhysicsSettings.CODEC, ButtSync::physics,
+			Butts.CODEC, ButtSync::appearance,
+			UV_LAYOUTS_CODEC, ButtSync::uvLayouts,
+			ButtSync::new
+	);
+
 }

@@ -59,6 +59,14 @@ public abstract class BaseWildfireScreen extends Screen {
 		return addRenderableWidget(sliderBuilder.build());
 	}
 
+	protected void addBackButton() {
+		addButton(builder -> builder
+				.message(() -> Component.literal("< ").append(Component.translatable("wildfire_gender.back")))
+				.position(8, 8)
+				.size(82, 20)
+				.onPress(button -> onClose()));
+	}
+
 	public @Nullable PlayerConfig getPlayer() {
 		return WildfireGender.getPlayerById(this.playerUUID);
 	}
@@ -71,6 +79,20 @@ public abstract class BaseWildfireScreen extends Screen {
 		ctx.enableScissor(xP - 38, yP - 79, xP + 38, yP + 9);
 		GuiUtils.drawEntityOnScreen(ctx, xP - 38, yP - 79, xP + 38, yP + 69, 70, mouseX, mouseY + 35, player);
 		ctx.disableScissor();
+	}
+
+	protected void renderPaperDoll(GuiGraphics ctx, int centerX, int top, int bottom, boolean rearView) {
+		renderPaperDoll(ctx, centerX, top, bottom, 62, rearView, 0, 0, 0, 0, 0, 0, 0);
+	}
+
+	protected void renderPaperDoll(GuiGraphics ctx, int centerX, int top, int bottom, int size, boolean rearView,
+	                               float offsetX, float offsetY, float physicsX, float physicsY,
+	                               float physicsRotation, float viewYaw, float viewPitch) {
+		var player = minecraft.player;
+		if(player == null) return;
+		GuiUtils.drawEntityFacing(ctx, Math.round(centerX - 58 + offsetX), Math.round(top + offsetY),
+				Math.round(centerX + 58 + offsetX), Math.round(bottom + offsetY), size, rearView, player,
+				physicsX, physicsY, physicsRotation, viewYaw, viewPitch);
 	}
 
 	@Override

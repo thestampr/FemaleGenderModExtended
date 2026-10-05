@@ -79,6 +79,7 @@ public record Contributor(
 		MASCOT(5),
 		VOICE_ACTOR_FEMALE(6),
 		GENERIC(7),
+		MOD_EXTENDER(9, ChatFormatting.LIGHT_PURPLE.getColor()),
 		;
 
 		private final int bit;

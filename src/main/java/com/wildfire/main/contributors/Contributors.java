@@ -55,6 +55,7 @@ public final class Contributors {
 		addContributor("ad8ee68c-0aa1-47f9-b29f-f92fa1ef66dc", "DiaDemiEmi", Contributor.Role.DEVELOPER);
 		addContributor("3f36f7e9-7459-43fe-87ce-4e8a5d47da80", "IzzyBizzy45", Contributor.Role.DEVELOPER);
 		addContributor("ad3cb52d-524b-41b4-b9d6-b91ec440811d", "RacoonDog", Contributor.Role.DEVELOPER);
+		addContributor("e924f802-ee05-46cd-a7d4-c511f22d46ac", "thestampr", Contributor.Role.MOD_EXTENDER);
 		addContributor("618a8390-51b1-43b2-a53a-ab72c1bbd8bd", "Kichura", Contributor.Role.CI_MAINTAINER);
 		addContributor("9a60e979-c890-4b43-a4c0-32d8a9f6b6b9", "SavLeftUs", Contributor.Role.VOICE_ACTOR_FEMALE);
 		addContributor("525b0455-15e9-49b7-b61d-f291e8ee6c5b", "Powerless001", Contributor.Role.GENERIC);

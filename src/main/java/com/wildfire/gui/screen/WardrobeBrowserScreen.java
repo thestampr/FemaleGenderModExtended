@@ -67,11 +67,7 @@ public class WardrobeBrowserScreen extends BaseWildfireScreen {
 	}
 
 	public static BaseWildfireScreen create(LocalPlayer player, @Nullable Screen parent) {
-		if(ClientConfig.INSTANCE.get(ClientConfig.FIRST_TIME_LOAD) && CloudSync.isAvailable()) {
-			return new WildfireFirstTimeSetupScreen(parent, player.getUUID());
-		} else {
-			return new WardrobeBrowserScreen(parent, player.getUUID());
-		}
+		return new WildfireBreastCustomizationScreen(parent, player.getUUID());
 	}
 
 	public static void open(Minecraft client, LocalPlayer player) {
@@ -114,8 +110,7 @@ public class WardrobeBrowserScreen extends BaseWildfireScreen {
 				.size(157, 20)
 				.onPress(button -> {
 					client.setScreen(new WildfireBreastCustomizationScreen(WardrobeBrowserScreen.this, this.playerUUID));
-				})
-				.active(plr.getGender().canHaveBreasts()));
+				}));
 
 		addButton(builder -> {
 			builder.message(() -> Component.translatable("wildfire_gender.cloud_settings"));

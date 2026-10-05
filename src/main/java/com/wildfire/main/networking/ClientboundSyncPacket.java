@@ -19,8 +19,6 @@
 package com.wildfire.main.networking;
 
 import com.wildfire.main.WildfireGender;
-import com.wildfire.main.config.enums.Gender;
-import com.wildfire.main.entitydata.Breasts;
 import com.wildfire.main.entitydata.PlayerConfig;
 import io.netty.buffer.ByteBuf;
 import net.fabricmc.api.EnvType;
@@ -32,19 +30,17 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.util.UUID;
-
 public final class ClientboundSyncPacket extends AbstractSyncPacket implements CustomPacketPayload {
 
-	public static final Type<ClientboundSyncPacket> ID = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(WildfireGender.MODID, "sync"));
+	public static final Type<ClientboundSyncPacket> ID = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(WildfireGender.MODID, "extended/sync"));
 	public static final StreamCodec<ByteBuf, ClientboundSyncPacket> CODEC = codec(ClientboundSyncPacket::new);
 
 	public ClientboundSyncPacket(PlayerConfig plr) {
 		super(plr);
 	}
 
-	private ClientboundSyncPacket(UUID uuid, Gender gender, float bustSize, boolean hurtSounds, float voicePitch, BreastPhysics physics, Breasts breasts, UVLayouts uvLayouts) {
-		super(uuid, gender, bustSize, hurtSounds, voicePitch, physics,  breasts, uvLayouts);
+	private ClientboundSyncPacket(CoreProfile core, BreastSync breast, ButtSync butt) {
+		super(core, breast, butt);
 	}
 
 	@Override

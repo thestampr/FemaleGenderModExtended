@@ -37,6 +37,7 @@ public class WildfireButton extends Button {
 	private final @Nullable ButtonRenderer renderer;
 	private final Supplier<Component> messageSupplier;
 	public boolean transparent = false;
+	private int backgroundAlpha = 84;
 
 	private WildfireButton(int x, int y, int w, int h, Supplier<Component> text, Button.OnPress onPress, CreateNarration narrationSupplier, @Nullable ButtonRenderer renderer) {
 		super(x, y, w, h, text.get(), onPress, narrationSupplier);
@@ -63,9 +64,9 @@ public class WildfireButton extends Button {
 
 	@Override
 	protected void renderContents(GuiGraphics ctx, int mouseX, int mouseY, float partialTicks) {
-		int clr = 0x444444 + (84 << 24);
-		if(this.isHoveredOrFocused()) clr = 0x666666 + (84 << 24);
-		if(!active) clr = 0x222222 + (84 << 24);
+		int clr = 0x444444 | (backgroundAlpha << 24);
+		if(this.isHoveredOrFocused()) clr = 0x666666 | (backgroundAlpha << 24);
+		if(!active) clr = 0x222222 | (backgroundAlpha << 24);
 		if(!transparent) ctx.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), clr);
 
 		drawInner(ctx, mouseX, mouseY, partialTicks);
@@ -76,6 +77,11 @@ public class WildfireButton extends Button {
 
 	public WildfireButton setTransparent(boolean b) {
 		this.transparent = b;
+		return this;
+	}
+
+	public WildfireButton setBackgroundAlpha(int alpha) {
+		this.backgroundAlpha = Math.max(0, Math.min(255, alpha));
 		return this;
 	}
 

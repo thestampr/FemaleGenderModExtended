@@ -24,11 +24,14 @@ import com.google.common.cache.LoadingCache;
 import com.wildfire.api.IGenderArmor;
 import com.wildfire.main.WildfireGender;
 import com.wildfire.main.WildfireHelper;
+import com.wildfire.main.config.ClientConfig;
 import com.wildfire.main.config.Configuration;
 import com.wildfire.main.config.enums.Gender;
 import com.wildfire.main.config.types.ConfigKey;
 import com.wildfire.main.uvs.UVLayout;
 import com.wildfire.physics.BreastPhysics;
+import com.wildfire.physics.ButtPhysics;
+import com.wildfire.physics.animation.CustomAnimationPhysics;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.ChatFormatting;
@@ -69,12 +72,21 @@ public class EntityConfig {
 	protected boolean breastPhysics = Configuration.BREAST_PHYSICS.getDefault();
 	protected float bounceMultiplier = Configuration.BOUNCE_MULTIPLIER.getDefault();
 	protected float floppyMultiplier = Configuration.FLOPPY_MULTIPLIER.getDefault();
+	protected float buttSize = Configuration.BUTT_SIZE.getDefault();
+	protected boolean buttPhysics = Configuration.BUTT_PHYSICS.getDefault();
+	protected float buttBounceMultiplier = Configuration.BUTT_BOUNCE_MULTIPLIER.getDefault();
+	protected float buttFloppyMultiplier = Configuration.BUTT_FLOPPY_MULTIPLIER.getDefault();
+	protected boolean realisticModel = Configuration.REALISTIC_MODEL.getDefault();
 
 	protected UVLayout leftBreastUVLayout = Configuration.LEFT_BREAST_UV_LAYOUT.getDefault();
 	protected UVLayout rightBreastUVLayout = Configuration.RIGHT_BREAST_UV_LAYOUT.getDefault();
 
 	protected UVLayout leftBreastOverlayUVLayout = Configuration.LEFT_BREAST_OVERLAY_UV_LAYOUT.getDefault();
 	protected UVLayout rightBreastOverlayUVLayout = Configuration.RIGHT_BREAST_OVERLAY_UV_LAYOUT.getDefault();
+	protected UVLayout leftButtUVLayout = Configuration.LEFT_BUTT_UV_LAYOUT.getDefault();
+	protected UVLayout rightButtUVLayout = Configuration.RIGHT_BUTT_UV_LAYOUT.getDefault();
+	protected UVLayout leftButtOverlayUVLayout = Configuration.LEFT_BUTT_OVERLAY_UV_LAYOUT.getDefault();
+	protected UVLayout rightButtOverlayUVLayout = Configuration.RIGHT_BUTT_OVERLAY_UV_LAYOUT.getDefault();
 
 	protected UVLayout leftBreastArmorUVLayout = Configuration.LEFT_BREAST_ARMOR_UV_LAYOUT.getDefault();
 	protected UVLayout rightBreastArmorUVLayout = Configuration.RIGHT_BREAST_ARMOR_UV_LAYOUT.getDefault();
@@ -90,8 +102,13 @@ public class EntityConfig {
 	//      with a client extension class (e.g. the PlayerEntity & AbstractClientPlayerEntity classes)
 	protected final BreastPhysics lBreastPhysics, rBreastPhysics;
 	protected final Breasts breasts;
+	protected final ButtPhysics leftButtPhysics, rightButtPhysics;
+	protected final Butts butts;
 	protected boolean jacketLayer = true;
-	protected @Nullable BreastDataComponent fromComponent;
+	protected @Nullable BreastDataComponent fromChestComponent;
+	protected @Nullable BreastDataComponent fromLeggingsComponent;
+	private boolean armorDataInitialized;
+	private boolean bodyPhysicsSuppressed;
 
 	@ApiStatus.Internal
 	public boolean forceSimplifiedPhysics = false;
@@ -99,39 +116,72 @@ public class EntityConfig {
 	protected EntityConfig(UUID uuid) {
 		this.uuid = uuid;
 		this.breasts = new Breasts();
+		this.butts = new Butts();
 		lBreastPhysics = new BreastPhysics(this);
 		rBreastPhysics = new BreastPhysics(this);
+		leftButtPhysics = new ButtPhysics(this);
+		rightButtPhysics = new ButtPhysics(this);
 	}
 
 	/**
-	 * Copy gender settings included in the given {@link ItemStack item NBT} to the current entity
+	 * Copy body settings included in the armor NBT to the current entity.
 	 *
 	 * @see BreastDataComponent
 	 */
-	public void readFromStack(ItemStack chestplate) {
-		CustomData component = chestplate.get(DataComponents.CUSTOM_DATA);
-		if(chestplate.isEmpty() || component == null) {
-			this.fromComponent = null;
-			this.gender = Gender.MALE;
-			return;
-		} else if(fromComponent != null && Objects.equals(component, fromComponent.nbtComponent())) {
-			// nothing's changed since the last time we checked, so there's no need to read from the
-			// underlying nbt tag again
-			return;
+	public void readFromArmor(ItemStack chestplate, ItemStack leggings) {
+		CustomData chestData = chestplate.get(DataComponents.CUSTOM_DATA);
+		CustomData leggingsData = leggings.get(DataComponents.CUSTOM_DATA);
+		if(armorDataInitialized && matchesCachedComponent(chestData, fromChestComponent)
+				&& matchesCachedComponent(leggingsData, fromLeggingsComponent)) return;
+		armorDataInitialized = true;
+
+		fromChestComponent = BreastDataComponent.fromComponent(chestData);
+		fromLeggingsComponent = BreastDataComponent.fromComponent(leggingsData);
+
+		if(fromChestComponent == null) {
+			pBustSize = 0;
+			breastPhysics = false;
+			bounceMultiplier = Configuration.BOUNCE_MULTIPLIER.getDefault();
+			floppyMultiplier = Configuration.FLOPPY_MULTIPLIER.getDefault();
+			breasts.copyFrom(new Breasts());
+		} else {
+			pBustSize = fromChestComponent.breastSize();
+			breastPhysics = fromChestComponent.breastPhysics().enabled();
+			bounceMultiplier = fromChestComponent.breastPhysics().intensity();
+			floppyMultiplier = fromChestComponent.breastPhysics().momentum();
+			breasts.updateCleavage(fromChestComponent.breastCleavage());
+			breasts.updateOffsets(fromChestComponent.breastOffsets());
 		}
 
-		fromComponent = BreastDataComponent.fromComponent(component);
-		if(fromComponent == null) {
-			this.gender = Gender.MALE;
-			return;
+		if(fromLeggingsComponent == null) {
+			buttSize = 0;
+			buttPhysics = false;
+			buttBounceMultiplier = Configuration.BUTT_BOUNCE_MULTIPLIER.getDefault();
+			buttFloppyMultiplier = Configuration.BUTT_FLOPPY_MULTIPLIER.getDefault();
+			butts.copyFrom(new Butts());
+		} else {
+			buttSize = fromLeggingsComponent.buttSize();
+			buttPhysics = fromLeggingsComponent.buttPhysics().enabled();
+			buttBounceMultiplier = fromLeggingsComponent.buttPhysics().intensity();
+			buttFloppyMultiplier = fromLeggingsComponent.buttPhysics().momentum();
+			butts.updateCleavage(fromLeggingsComponent.buttCleavage());
+			butts.updateXOffset(fromLeggingsComponent.buttOffsets().x);
+			butts.updateYOffset(fromLeggingsComponent.buttOffsets().y);
+			butts.updateZOffset(fromLeggingsComponent.buttOffsets().z);
 		}
 
-		breastPhysics = false;
-		pBustSize = fromComponent.breastSize();
-		gender = pBustSize >= 0.02f ? Gender.FEMALE : Gender.MALE;
-		breasts.updateCleavage(fromComponent.cleavage());
-		breasts.updateOffsets(fromComponent.offsets());
-		this.jacketLayer = fromComponent.jacket();
+		// Armor stands do not have a profile gender of their own. A body setting copied to
+		// either armor slot is therefore the authoritative signal for both body-part layers.
+		gender = pBustSize >= 0.02f || buttSize >= 0.02f ? Gender.FEMALE : Gender.MALE;
+
+		BreastDataComponent appearance = fromLeggingsComponent != null ? fromLeggingsComponent : fromChestComponent;
+		realisticModel = appearance != null && appearance.realisticModel();
+		jacketLayer = appearance == null || appearance.jacket();
+	}
+
+	private static boolean matchesCachedComponent(@Nullable CustomData data,
+	                                              @Nullable BreastDataComponent cached) {
+		return data == null ? cached == null : cached != null && Objects.equals(data, cached.nbtComponent());
 	}
 
 	/**
@@ -160,6 +210,25 @@ public class EntityConfig {
 		return CACHE.getUnchecked(entity.getUUID());
 	}
 
+	/**
+	 * Resolves the profile snapshot used by entity renderers, including player-like mannequins
+	 * created by inventory and paper-doll screens.
+	 */
+	@Environment(EnvType.CLIENT)
+	public static EntityConfig getEntityForRendering(LivingEntity entity) {
+		if(entity instanceof Player) return getEntity(entity);
+		if(entity instanceof Avatar) {
+			// Other mods commonly create a mannequin with the displayed player's UUID. Prefer an
+			// already-loaded player profile so vanilla-style paper dolls receive the same body state.
+			PlayerConfig playerConfig = WildfireGender.getPlayerById(entity.getUUID());
+			if(playerConfig != null) return playerConfig;
+			// Our own GUI mannequins install an isolated profile when no shared player profile exists.
+			EntityConfig mannequinConfig = CACHE.getIfPresent(entity.getUUID());
+			if(mannequinConfig != null) return mannequinConfig;
+		}
+		return getEntity(entity);
+	}
+
 	public Gender getGender() {
 		return gender;
 	}
@@ -168,12 +237,28 @@ public class EntityConfig {
 		return breasts;
 	}
 
+	public Butts getButts() {
+		return butts;
+	}
+
 	public float getBustSize() {
 		return pBustSize;
 	}
 
+	public float getButtSize() {
+		return buttSize;
+	}
+
 	public boolean hasBreastPhysics() {
-		return breastPhysics;
+		return breastPhysics && !bodyPhysicsSuppressed;
+	}
+
+	public boolean hasButtPhysics() {
+		return buttPhysics && !bodyPhysicsSuppressed;
+	}
+
+	public boolean usesRealisticModel() {
+		return realisticModel;
 	}
 
 	/**
@@ -182,10 +267,14 @@ public class EntityConfig {
 	@ApiStatus.Obsolete
 	@Environment(EnvType.CLIENT)
 	public boolean getArmorPhysicsOverride() {
-		return false;
+		return ClientConfig.INSTANCE.get(ClientConfig.ARMOR_PHYSICS_OVERRIDE);
 	}
 
 	public boolean showBreastsInArmor() {
+		return true;
+	}
+
+	public boolean showButtInArmor() {
 		return true;
 	}
 
@@ -197,6 +286,14 @@ public class EntityConfig {
 		return this.floppyMultiplier;
 	}
 
+	public float getButtBounceMultiplier() {
+		return buttBounceMultiplier;
+	}
+
+	public float getButtFloppiness() {
+		return buttFloppyMultiplier;
+	}
+
 	public float getVoicePitch() {
 		return this.voicePitch;
 	}
@@ -206,6 +303,14 @@ public class EntityConfig {
 	}
 	public BreastPhysics getRightBreastPhysics() {
 		return rBreastPhysics;
+	}
+
+	public ButtPhysics getLeftButtPhysics() {
+		return leftButtPhysics;
+	}
+
+	public ButtPhysics getRightButtPhysics() {
+		return rightButtPhysics;
 	}
 
 	// FIXME these update methods should match the rest and be in PlayerConfig instead of here
@@ -243,6 +348,38 @@ public class EntityConfig {
 		return updateValue(Configuration.RIGHT_BREAST_OVERLAY_UV_LAYOUT, layout, v -> this.rightBreastOverlayUVLayout = v);
 	}
 
+	public UVLayout getLeftButtUVLayout() {
+		return leftButtUVLayout;
+	}
+
+	public boolean updateLeftButtUVLayout(UVLayout layout) {
+		return updateValue(Configuration.LEFT_BUTT_UV_LAYOUT, layout, v -> leftButtUVLayout = v);
+	}
+
+	public UVLayout getRightButtUVLayout() {
+		return rightButtUVLayout;
+	}
+
+	public boolean updateRightButtUVLayout(UVLayout layout) {
+		return updateValue(Configuration.RIGHT_BUTT_UV_LAYOUT, layout, v -> rightButtUVLayout = v);
+	}
+
+	public UVLayout getLeftButtOverlayUVLayout() {
+		return leftButtOverlayUVLayout;
+	}
+
+	public boolean updateLeftButtOverlayUVLayout(UVLayout layout) {
+		return updateValue(Configuration.LEFT_BUTT_OVERLAY_UV_LAYOUT, layout, v -> leftButtOverlayUVLayout = v);
+	}
+
+	public UVLayout getRightButtOverlayUVLayout() {
+		return rightButtOverlayUVLayout;
+	}
+
+	public boolean updateRightButtOverlayUVLayout(UVLayout layout) {
+		return updateValue(Configuration.RIGHT_BUTT_OVERLAY_UV_LAYOUT, layout, v -> rightButtOverlayUVLayout = v);
+	}
+
 	@Deprecated(forRemoval = true)
 	public UVLayout getLeftBreastArmorUVLayout() {
 		return this.leftBreastArmorUVLayout;
@@ -270,11 +407,37 @@ public class EntityConfig {
 	}
 
 	@Environment(EnvType.CLIENT)
-	public void tickBreastPhysics(LivingEntity entity) {
-		IGenderArmor armor = WildfireHelper.getArmorConfig(entity.getItemBySlot(EquipmentSlot.CHEST));
+	public void tickBodyPhysics(LivingEntity entity) {
+		IGenderArmor chestArmor = WildfireHelper.getArmorConfig(entity.getItemBySlot(EquipmentSlot.CHEST));
+		IGenderArmor leggings = WildfireHelper.getArmorConfig(entity.getItemBySlot(EquipmentSlot.LEGS));
+		bodyPhysicsSuppressed = entity instanceof ArmorStand
+				&& !ClientConfig.INSTANCE.get(ClientConfig.ARMOR_STAND_PHYSICS);
+		if(bodyPhysicsSuppressed) {
+			getLeftBreastPhysics().updateSimplified(chestArmor);
+			getRightBreastPhysics().updateSimplified(chestArmor);
+			getLeftButtPhysics().updateSimplified(leggings);
+			getRightButtPhysics().updateSimplified(leggings);
+			return;
+		}
 
-		getLeftBreastPhysics().update(entity, armor);
-		getRightBreastPhysics().update(entity, armor);
+		var animationMotion = CustomAnimationPhysics.consume(uuid, entity.level().getGameTime());
+
+		if(chestArmor.coversBreasts() && !getArmorPhysicsOverride()) {
+			// Armor Physics off: discard accumulated motion instead of letting the armor
+			// keep an invisible spring running behind the static rendered shell.
+			getLeftBreastPhysics().updateSimplified(chestArmor);
+			getRightBreastPhysics().updateSimplified(chestArmor);
+		} else {
+			getLeftBreastPhysics().update(entity, chestArmor, animationMotion.breasts());
+			getRightBreastPhysics().update(entity, chestArmor, animationMotion.breasts());
+		}
+		if(usesRealisticModel()) {
+			getLeftButtPhysics().update(entity, leggings, animationMotion.realisticButt());
+			getRightButtPhysics().update(entity, leggings, animationMotion.realisticButt());
+		} else {
+			getLeftButtPhysics().update(entity, leggings, animationMotion.leftClassicButt());
+			getRightButtPhysics().update(entity, leggings, animationMotion.rightClassicButt());
+		}
 	}
 
 	@Override
@@ -296,6 +459,8 @@ public class EntityConfig {
 		info.add("Uniboob: " + breasts.isUniboob());
 		info.add("Cleavage: " + breasts.getCleavage());
 		info.add("Offsets: (" + breasts.getXOffset() + ", " + breasts.getYOffset() + ", " + breasts.getZOffset() + ")");
+		info.add("Butt size: " + getButtSize());
+		info.add("Butt physics enabled: " + hasButtPhysics());
 
 		return info;
 	}

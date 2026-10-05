@@ -77,7 +77,7 @@ public final class Breasts {
 	/**
 	 * How far apart the player's breasts should be rendered from each other, also referred to as Separation in the UI
 	 *
-	 * @implNote Negative float values renders the breasts further apart, while positive values renders them closer together
+	 * @implNote Positive values render the breasts further apart, while negative values render them closer together
 	 *
 	 * @return  A {@code float} between {@code -1f} and {@code 1f}
 	 */

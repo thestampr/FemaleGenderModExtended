@@ -43,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -53,8 +54,10 @@ public class WildfireGenderClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		tryMigrate("WildfireGender", Configuration.CONFIG_DIR);
-		tryMigrate("wildfire_gender.json", "female_gender_mod.json");
+		tryImportConfig("FemaleGenderMod", Configuration.CONFIG_DIR);
+		tryImportConfig("WildfireGender", Configuration.CONFIG_DIR);
+		tryImportConfig("female_gender_mod.json", "female_gender_mod_extended.json");
+		tryImportConfig("wildfire_gender.json", "female_gender_mod_extended.json");
 
 		ClientConfig.INSTANCE.load();
 		WildfireSounds.register();
@@ -70,7 +73,7 @@ public class WildfireGenderClient implements ClientModInitializer {
 		WildfireCommand.init();
 	}
 
-	private static void tryMigrate(String oldPath, String newPath) {
+	private static void tryImportConfig(String oldPath, String newPath) {
 		Path oldFile = FabricLoader.getInstance().getConfigDir().resolve(oldPath);
 		Path newFile = FabricLoader.getInstance().getConfigDir().resolve(newPath);
 
@@ -79,15 +82,22 @@ public class WildfireGenderClient implements ClientModInitializer {
 			return;
 		}
 		if(Files.exists(oldFile) && Files.exists(newFile)) {
-			WildfireGender.LOGGER.warn("Cannot migrate {} to {} as both exist", oldPath, oldPath);
+			WildfireGender.LOGGER.debug("Skipping config import from {} because {} already exists", oldPath, newPath);
 			return;
 		}
 
-		try {
-			Files.move(oldFile, newFile);
-			WildfireGender.LOGGER.info("Migrated {} to '{}'", oldPath, newFile);
+		try(var paths = Files.walk(oldFile)) {
+			for(Path source : paths.toList()) {
+				Path destination = newFile.resolve(oldFile.relativize(source));
+				if(Files.isDirectory(source)) {
+					Files.createDirectories(destination);
+				} else {
+					Files.copy(source, destination, StandardCopyOption.COPY_ATTRIBUTES);
+				}
+			}
+			WildfireGender.LOGGER.info("Imported config from {} to '{}'", oldPath, newFile);
 		} catch (IOException e) {
-			WildfireGender.LOGGER.error("Failed to move {} to {}", oldPath, newFile, e);
+			WildfireGender.LOGGER.error("Failed to import config from {}", oldPath, e);
 		}
 	}
 

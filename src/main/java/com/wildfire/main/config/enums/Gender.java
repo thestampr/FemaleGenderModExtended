@@ -62,6 +62,14 @@ public enum Gender {
 		return canHaveBreasts;
 	}
 
+	/**
+	 * Whether the configured gender displays the mod's gendered body-part models.
+	 * Breast-specific callers may continue to use {@link #canHaveBreasts()}.
+	 */
+	public boolean displaysGenderedBodyParts() {
+		return canHaveBreasts;
+	}
+
 	public Gender next() {
 		return switch(this) {
 			case MALE -> FEMALE;

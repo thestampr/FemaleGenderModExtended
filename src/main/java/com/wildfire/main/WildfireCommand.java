@@ -286,19 +286,22 @@ public class WildfireCommand {
 		if(!player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) return 0;
 		var world = player.level();
 
-		var item = new ItemStack(Items.IRON_CHESTPLATE);
+		var chestplate = new ItemStack(Items.IRON_CHESTPLATE);
+		var leggings = new ItemStack(Items.IRON_LEGGINGS);
 		var config = WildfireGender.getOrAddPlayerById(player.getUUID());
-		var component = BreastDataComponent.fromPlayer(player, config);
-		if(component == null) {
-			ctx.getSource().sendError(Component.literal("Returned breast data component was null; do you have Hide in Armor on?"));
+		var breastComponent = BreastDataComponent.fromPlayer(player, config, EquipmentSlot.CHEST);
+		var buttComponent = BreastDataComponent.fromPlayer(player, config, EquipmentSlot.LEGS);
+		if(breastComponent == null && buttComponent == null) {
+			ctx.getSource().sendError(Component.literal("No visible body settings are enabled for armor"));
 			return 0;
 		}
-		component.write(item);
+		if(breastComponent != null) breastComponent.write(chestplate);
+		if(buttComponent != null) buttComponent.write(leggings);
 
 		var stand = new ArmorStand(world, player.getBlockX(), player.getBlockY(), player.getBlockZ());
 		stand.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
-		stand.setItemSlot(EquipmentSlot.CHEST, item);
-		stand.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.IRON_LEGGINGS));
+		stand.setItemSlot(EquipmentSlot.CHEST, chestplate);
+		stand.setItemSlot(EquipmentSlot.LEGS, leggings);
 		stand.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));
 		world.addFreshEntity(stand);
 

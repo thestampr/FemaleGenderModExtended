@@ -69,6 +69,7 @@ public class PlayerConfig extends EntityConfig {
 	protected boolean hurtSounds = Configuration.HURT_SOUNDS.getDefault();
 	protected boolean holidayThemes = Configuration.HOLIDAY_THEMES.getDefault();
 	protected boolean showBreastsInArmor = Configuration.SHOW_IN_ARMOR.getDefault();
+	protected boolean showButtInArmor = Configuration.SHOW_BUTT_IN_ARMOR.getDefault();
 
 	/**
 	 * @deprecated Use {@link #updateGender(Gender)} instead
@@ -91,7 +92,7 @@ public class PlayerConfig extends EntityConfig {
 
 	// these shouldn't ever be called on players, but just to be safe, override with a noop.
 	@Override
-	public void readFromStack(ItemStack chestplate) {
+	public void readFromArmor(ItemStack chestplate, ItemStack leggings) {
 	}
 
 	public Configuration getConfig() {
@@ -104,6 +105,10 @@ public class PlayerConfig extends EntityConfig {
 
 	public boolean updateBustSize(float value) {
 		return updateValue(Configuration.BUST_SIZE, value, v -> this.pBustSize = v);
+	}
+
+	public boolean updateButtSize(float value) {
+		return updateValue(Configuration.BUTT_SIZE, value, v -> this.buttSize = v);
 	}
 
 
@@ -132,6 +137,14 @@ public class PlayerConfig extends EntityConfig {
 		return updateValue(Configuration.BREAST_PHYSICS, value, v -> this.breastPhysics = v);
 	}
 
+	public boolean updateButtPhysics(boolean value) {
+		return updateValue(Configuration.BUTT_PHYSICS, value, v -> this.buttPhysics = v);
+	}
+
+	public boolean updateRealisticModel(boolean value) {
+		return updateValue(Configuration.REALISTIC_MODEL, value, v -> this.realisticModel = v);
+	}
+
 	/**
 	 * @apiNote The value this method returns has been moved to {@link ClientConfig}, and this method is only
 	 * 			retained for compatibility with mods that use this as a mixin target.
@@ -150,12 +163,29 @@ public class PlayerConfig extends EntityConfig {
 		return updateValue(Configuration.SHOW_IN_ARMOR, value, v -> this.showBreastsInArmor = v);
 	}
 
+	@Override
+	public boolean showButtInArmor() {
+		return showButtInArmor;
+	}
+
+	public boolean updateShowButtInArmor(boolean value) {
+		return updateValue(Configuration.SHOW_BUTT_IN_ARMOR, value, v -> showButtInArmor = v);
+	}
+
 	public boolean updateBounceMultiplier(float value) {
 		return updateValue(Configuration.BOUNCE_MULTIPLIER, value, v -> this.bounceMultiplier = v);
 	}
 
 	public boolean updateFloppiness(float value) {
 		return updateValue(Configuration.FLOPPY_MULTIPLIER, value, v -> this.floppyMultiplier = v);
+	}
+
+	public boolean updateButtBounceMultiplier(float value) {
+		return updateValue(Configuration.BUTT_BOUNCE_MULTIPLIER, value, v -> buttBounceMultiplier = v);
+	}
+
+	public boolean updateButtFloppiness(float value) {
+		return updateValue(Configuration.BUTT_FLOPPY_MULTIPLIER, value, v -> buttFloppyMultiplier = v);
 	}
 
 	public SyncStatus getSyncStatus() {
@@ -277,6 +307,8 @@ public class PlayerConfig extends EntityConfig {
 		lines.add(1, "Sync status: " + getSyncStatus());
 		lines.add("Female hurt sounds: " + hasHurtSounds());
 		lines.add("Show in armor: " + showBreastsInArmor());
+		lines.add("Show butt in armor: " + showButtInArmor());
+		lines.add("Realistic model: " + usesRealisticModel());
 		return lines;
 	}
 

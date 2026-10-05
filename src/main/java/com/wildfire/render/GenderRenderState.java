@@ -21,10 +21,12 @@ package com.wildfire.render;
 import com.wildfire.main.WildfireGenderClient;
 import com.wildfire.main.config.enums.Gender;
 import com.wildfire.main.entitydata.Breasts;
+import com.wildfire.main.entitydata.Butts;
 import com.wildfire.main.entitydata.EntityConfig;
 import com.wildfire.main.entitydata.PlayerConfig;
 import com.wildfire.main.uvs.UVLayout;
-import com.wildfire.physics.BreastPhysics;
+import com.wildfire.main.uvs.UvEditorFeedback;
+import com.wildfire.physics.BodyPhysics;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.rendering.v1.RenderStateDataKey;
@@ -40,6 +42,8 @@ import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.level.block.Blocks;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
+
 /**
  * A decoupled render state object that represents a snapshot of a {@link EntityConfig} during a certain frame.
  */
@@ -49,57 +53,142 @@ public class GenderRenderState {
 
 	public static void update(LivingEntity entity, EntityRenderState state) {
 		if(!EntityConfig.isSupportedEntity(entity)) return;
-		var config = EntityConfig.getEntity(entity);
-		state.setData(STATE, new GenderRenderState(config, entity));
+		var config = EntityConfig.getEntityForRendering(entity);
+		var genderState = new GenderRenderState(config, entity);
+		if(entity instanceof Avatar && !(entity instanceof Player)) {
+			genderState.applyMannequinSizes();
+		}
+		state.setData(STATE, genderState);
 	}
 
 	public static @Nullable GenderRenderState get(EntityRenderState state) {
 		return state.getData(STATE);
 	}
 
+	public void applyPaperDollPhysics(boolean buttPreview, float positionX, float positionY, float rotation,
+	                                  float configuredSize) {
+		BodyPhysicsState left = buttPreview ? leftButtPhysics : leftBreastPhysics;
+		BodyPhysicsState right = buttPreview ? rightButtPhysics : rightBreastPhysics;
+		left.setPreview(positionX, positionY, rotation, configuredSize);
+		right.setPreview(positionX, positionY, rotation, configuredSize);
+	}
+
+	private void applyMannequinSizes() {
+		leftBreastPhysics.setPreviewSize(bustSize);
+		rightBreastPhysics.setPreviewSize(bustSize);
+		leftButtPhysics.setPreviewSize(buttSize);
+		rightButtPhysics.setPreviewSize(buttSize);
+	}
+
 	public final BreastState breasts;
-	public final BreastPhysicsState leftBreastPhysics;
-	public final BreastPhysicsState rightBreastPhysics;
+	public final ButtState butts;
+	public final BodyPhysicsState leftBreastPhysics;
+	public final BodyPhysicsState rightBreastPhysics;
+	public final BodyPhysicsState leftButtPhysics;
+	public final BodyPhysicsState rightButtPhysics;
 
 	public final float partialTicks;
+	public final float animationSampleTime;
+	public final long gameTime;
+	public final UUID entityId;
+	public final @Nullable Avatar avatar;
 
 	public final Gender gender;
 	public final float bustSize;
 	public final boolean hasBreastPhysics;
+	public final float buttSize;
+	public final boolean hasButtPhysics;
+	public final boolean realisticModel;
+	public final float buttBounceMultiplier;
+	public final float buttFloppyMultiplier;
 	public final float bounceMultiplier;
 	public final float floppyMultiplier;
 	public final boolean armorPhysicsOverride;
 	public final boolean showBreastsInArmor;
+	public final boolean showButtInArmor;
 	public final boolean hasJacketLayer;
 	public final boolean hasHolidayThemes;
 
-	public final UVLayout leftBreastUVLayout;
-	public final UVLayout rightBreastUVLayout;
-	public final UVLayout leftBreastOverlayUVLayout;
-	public final UVLayout rightBreastOverlayUVLayout;
+	public UVLayout leftBreastUVLayout;
+	public UVLayout rightBreastUVLayout;
+	public UVLayout leftBreastOverlayUVLayout;
+	public UVLayout rightBreastOverlayUVLayout;
+	public UVLayout leftButtUVLayout;
+	public UVLayout rightButtUVLayout;
+	public UVLayout leftButtOverlayUVLayout;
+	public UVLayout rightButtOverlayUVLayout;
 	public final UVLayout leftBreastArmorUVLayout;
 	public final UVLayout rightBreastArmorUVLayout;
 
 	public final boolean isBreathing;
 	public final @Nullable Component nametag;
+	public PreviewLayer previewLayer = PreviewLayer.ALL;
+	private @Nullable BreastSide previewSelectedSide;
+	private @Nullable BreastSide previewHoveredSide;
+
+	public enum PreviewLayer {
+		ALL,
+		BODY,
+		OUTER
+	}
+
+	public void applyUvPreviewSelection(BreastSide selectedSide, @Nullable BreastSide hoveredSide) {
+		this.previewSelectedSide = selectedSide;
+		this.previewHoveredSide = hoveredSide;
+	}
+
+	public UvEditorFeedback.State uvPreviewFeedbackState(BreastSide side) {
+		if(side == previewSelectedSide) return UvEditorFeedback.State.ACTIVE;
+		if(side == previewHoveredSide) return UvEditorFeedback.State.HOVERED;
+		return UvEditorFeedback.State.IDLE;
+	}
+
+	public void applyBreastUvPreview(UVLayout left, UVLayout right, UVLayout leftOverlay,
+	                                UVLayout rightOverlay) {
+		this.leftBreastUVLayout = left.copy();
+		this.rightBreastUVLayout = right.copy();
+		this.leftBreastOverlayUVLayout = leftOverlay.copy();
+		this.rightBreastOverlayUVLayout = rightOverlay.copy();
+	}
+
+	public void applyButtUvPreview(UVLayout left, UVLayout right, UVLayout leftOverlay,
+	                              UVLayout rightOverlay) {
+		this.leftButtUVLayout = left.copy();
+		this.rightButtUVLayout = right.copy();
+		this.leftButtOverlayUVLayout = leftOverlay.copy();
+		this.rightButtOverlayUVLayout = rightOverlay.copy();
+	}
 
 	private GenderRenderState(EntityConfig entityConfig, LivingEntity entity) {
 		this.breasts = new BreastState(entityConfig.getBreasts());
-		this.leftBreastPhysics = new BreastPhysicsState(entityConfig.getLeftBreastPhysics());
-		this.rightBreastPhysics = new BreastPhysicsState(entityConfig.getRightBreastPhysics());
+		this.butts = new ButtState(entityConfig.getButts());
+		this.leftBreastPhysics = new BodyPhysicsState(entityConfig.getLeftBreastPhysics());
+		this.rightBreastPhysics = new BodyPhysicsState(entityConfig.getRightBreastPhysics());
+		this.leftButtPhysics = new BodyPhysicsState(entityConfig.getLeftButtPhysics());
+		this.rightButtPhysics = new BodyPhysicsState(entityConfig.getRightButtPhysics());
 
 		this.partialTicks = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+		this.animationSampleTime = entity.tickCount + partialTicks;
+		this.gameTime = entity.level().getGameTime();
+		this.entityId = entity.getUUID();
+		this.avatar = entity instanceof Avatar playerLikeEntity ? playerLikeEntity : null;
 
 		this.gender = entityConfig.getGender();
 		this.bustSize = entityConfig.getBustSize();
 		this.hasBreastPhysics = entityConfig.hasBreastPhysics();
+		this.buttSize = entityConfig.getButtSize();
+		this.hasButtPhysics = entityConfig.hasButtPhysics();
+		this.realisticModel = entityConfig.usesRealisticModel();
+		this.buttBounceMultiplier = entityConfig.getButtBounceMultiplier();
+		this.buttFloppyMultiplier = entityConfig.getButtFloppiness();
 		this.bounceMultiplier = entityConfig.getBounceMultiplier();
 		this.floppyMultiplier = entityConfig.getFloppiness();
 		this.armorPhysicsOverride = entityConfig.getArmorPhysicsOverride();
 		this.showBreastsInArmor = entityConfig.showBreastsInArmor();
+		this.showButtInArmor = entityConfig.showButtInArmor();
 
-		if(entity instanceof Avatar playerLikeEntity) {
-			this.hasJacketLayer = playerLikeEntity.isModelPartShown(PlayerModelPart.JACKET);
+		if(avatar != null) {
+			this.hasJacketLayer = avatar.isModelPartShown(PlayerModelPart.JACKET);
 		} else {
 			this.hasJacketLayer = entityConfig instanceof PlayerConfig || entityConfig.hasJacketLayer();
 		}
@@ -114,6 +203,10 @@ public class GenderRenderState {
 		this.rightBreastUVLayout = entityConfig.getRightBreastUVLayout().copy();
 		this.leftBreastOverlayUVLayout = entityConfig.getLeftBreastOverlayUVLayout().copy();
 		this.rightBreastOverlayUVLayout = entityConfig.getRightBreastOverlayUVLayout().copy();
+		this.leftButtUVLayout = entityConfig.getLeftButtUVLayout().copy();
+		this.rightButtUVLayout = entityConfig.getRightButtUVLayout().copy();
+		this.leftButtOverlayUVLayout = entityConfig.getLeftButtOverlayUVLayout().copy();
+		this.rightButtOverlayUVLayout = entityConfig.getRightButtOverlayUVLayout().copy();
 		this.leftBreastArmorUVLayout = entityConfig.getLeftBreastArmorUVLayout().copy();
 		this.rightBreastArmorUVLayout = entityConfig.getRightBreastArmorUVLayout().copy();
 
@@ -138,37 +231,68 @@ public class GenderRenderState {
 		}
 	}
 
-	public class BreastPhysicsState {
+	public static class ButtState {
+		public final float xOffset;
+		public final float yOffset;
+		public final float zOffset;
+		public final float cleavage;
+		public final boolean linkedPhysics;
+
+		private ButtState(Butts butts) {
+			this.xOffset = butts.getXOffset();
+			this.yOffset = butts.getYOffset();
+			this.zOffset = butts.getZOffset();
+			this.cleavage = butts.getCleavage();
+			this.linkedPhysics = butts.isLinkedPhysics();
+		}
+	}
+
+	public class BodyPhysicsState {
 		private final float prePositionY, positionY;
 		private final float prePositionX, positionX;
 		private final float preBounceRotation, bounceRotation;
-		private final float preBreastSize, breastSize;
+		private final float previousSize, size;
+		private float previewPositionX, previewPositionY, previewRotation;
+		private float previewSize = Float.NaN;
 
-		private BreastPhysicsState(BreastPhysics breastPhysics) {
-			this.prePositionY = breastPhysics.getPrePositionY();
-			this.positionY = breastPhysics.getPositionY();
-			this.prePositionX = breastPhysics.getPrePositionX();
-			this.positionX = breastPhysics.getPositionX();
-			this.preBounceRotation = breastPhysics.getPreBounceRotation();
-			this.bounceRotation = breastPhysics.getBounceRotation();
-			this.preBreastSize = breastPhysics.getPreBreastSize();
-			this.breastSize = breastPhysics.getBreastSize();
+		private BodyPhysicsState(BodyPhysics physics) {
+			this.prePositionY = physics.getPrePositionY();
+			this.positionY = physics.getPositionY();
+			this.prePositionX = physics.getPrePositionX();
+			this.positionX = physics.getPositionX();
+			this.preBounceRotation = physics.getPreBounceRotation();
+			this.bounceRotation = physics.getBounceRotation();
+			this.previousSize = physics.getPreviousSize();
+			this.size = physics.getSize();
 		}
 
 		public float getPositionY() {
-			return Mth.lerp(partialTicks, this.prePositionY, this.positionY);
+			return Mth.lerp(partialTicks, this.prePositionY, this.positionY) + previewPositionY;
 		}
 
 		public float getPositionX() {
-			return Mth.lerp(partialTicks, this.prePositionX, this.positionX);
+			return Mth.lerp(partialTicks, this.prePositionX, this.positionX) + previewPositionX;
 		}
 
 		public float getBounceRotation() {
-			return Mth.lerp(partialTicks, this.preBounceRotation, this.bounceRotation);
+			return Mth.lerp(partialTicks, this.preBounceRotation, this.bounceRotation) + previewRotation;
 		}
 
-		public float getBreastSize() {
-			return Mth.lerp(partialTicks, this.preBreastSize, this.breastSize);
+		public float getSize() {
+			return Float.isNaN(previewSize)
+					? Mth.lerp(partialTicks, this.previousSize, this.size)
+					: previewSize;
+		}
+
+		private void setPreview(float positionX, float positionY, float rotation, float configuredSize) {
+			this.previewPositionX = positionX;
+			this.previewPositionY = positionY;
+			this.previewRotation = rotation;
+			this.previewSize = configuredSize;
+		}
+
+		private void setPreviewSize(float configuredSize) {
+			this.previewSize = configuredSize;
 		}
 	}
 }

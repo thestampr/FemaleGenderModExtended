@@ -6,29 +6,29 @@ package com.wildfire.physics;
 
 import com.wildfire.main.entitydata.EntityConfig;
 
-public final class BreastPhysics extends BodyPhysics {
-	public BreastPhysics(EntityConfig entityConfig) {
+public final class ButtPhysics extends BodyPhysics {
+	public ButtPhysics(EntityConfig entityConfig) {
 		super(entityConfig);
 	}
 
 	@Override
 	protected float configuredSize() {
-		return entityConfig.getBustSize();
+		return entityConfig.getButtSize();
 	}
 
 	@Override
 	protected float bounceMultiplier() {
-		return entityConfig.getBounceMultiplier();
+		return entityConfig.getButtBounceMultiplier();
 	}
 
 	@Override
 	protected float floppiness() {
-		return entityConfig.getFloppiness();
+		return entityConfig.getButtFloppiness();
 	}
 
 	@Override
 	protected boolean linkedPhysics() {
-		return entityConfig.getBreasts().isUniboob();
+		return entityConfig.getButts().isLinkedPhysics();
 	}
 
 	@Override
@@ -36,11 +36,11 @@ public final class BreastPhysics extends BodyPhysics {
 		return entityConfig.getGender().displaysGenderedBodyParts();
 	}
 
-	public float getBreastSize() {
+	public float getButtSize() {
 		return getSize();
 	}
 
-	public float getPreBreastSize() {
+	public float getPreviousButtSize() {
 		return getPreviousSize();
 	}
 }

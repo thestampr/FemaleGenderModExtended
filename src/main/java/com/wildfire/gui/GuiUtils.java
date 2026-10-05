@@ -18,6 +18,7 @@
 
 package com.wildfire.gui;
 
+import com.wildfire.render.GenderRenderState;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.Font;
@@ -36,6 +37,9 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Consumer;
 
 @Environment(EnvType.CLIENT)
 public final class GuiUtils {
@@ -128,5 +132,64 @@ public final class GuiUtils {
 	// TODO this could probably be removed and replaced with references to the real method we're copying here
 	public static void drawEntityOnScreen(GuiGraphics graphics, int x1, int y1, int x2, int y2, int size, float mouseX, float mouseY, LivingEntity entity) {
 		drawEntityOnScreen(graphics, x1, y1, x2, y2, size, mouseX, mouseY, 0f, 0f, entity);
+	}
+
+	public static void drawEntityFacing(GuiGraphics graphics, int x1, int y1, int x2, int y2, int size,
+	                                    boolean rearView, LivingEntity entity) {
+		drawEntityFacing(graphics, x1, y1, x2, y2, size, rearView, entity, 0, 0, 0, 0, 0,
+				GenderRenderState.PreviewLayer.ALL, null);
+	}
+
+	public static void drawEntityFacing(GuiGraphics graphics, int x1, int y1, int x2, int y2, int size,
+	                                    boolean rearView, LivingEntity entity, float physicsX, float physicsY,
+	                                    float physicsRotation, float viewYaw, float viewPitch) {
+		drawEntityFacing(graphics, x1, y1, x2, y2, size, rearView, entity, physicsX, physicsY,
+				physicsRotation, viewYaw, viewPitch, GenderRenderState.PreviewLayer.ALL, null);
+	}
+
+	public static void drawEntityFacing(GuiGraphics graphics, int x1, int y1, int x2, int y2, int size,
+	                                    boolean rearView, LivingEntity entity, float physicsX, float physicsY,
+	                                    float physicsRotation, float viewYaw, float viewPitch,
+	                                    GenderRenderState.PreviewLayer previewLayer,
+	                                    @Nullable Consumer<GenderRenderState> previewCustomizer) {
+		float pitchRadians = viewPitch * (float)(Math.PI / 180);
+		Quaternionf cameraRotation = new Quaternionf().rotateX(pitchRadians);
+		Quaternionf rotation = new Quaternionf().rotateZ((float)Math.PI).mul(cameraRotation);
+		EntityRenderState entityRenderState = InventoryScreen.extractRenderState(entity);
+		GenderRenderState genderState = GenderRenderState.get(entityRenderState);
+		if(genderState != null) {
+			genderState.previewLayer = previewLayer;
+			if(previewCustomizer != null) previewCustomizer.accept(genderState);
+			float configuredSize = rearView ? genderState.buttSize : genderState.bustSize;
+			genderState.applyPaperDollPhysics(rearView, physicsX, physicsY, physicsRotation, configuredSize);
+		}
+		if(entityRenderState instanceof LivingEntityRenderState livingState) {
+			if(livingState instanceof net.minecraft.client.renderer.entity.state.AvatarRenderState avatarState
+					&& previewLayer == GenderRenderState.PreviewLayer.BODY) {
+				avatarState.showHat = false;
+				avatarState.showJacket = false;
+				avatarState.showLeftPants = false;
+				avatarState.showRightPants = false;
+				avatarState.showLeftSleeve = false;
+				avatarState.showRightSleeve = false;
+			}
+			if(previewLayer == GenderRenderState.PreviewLayer.OUTER) {
+				// Use the renderer's translucent path so the complete default avatar becomes
+				// background context, rather than fading only the custom torso/leg meshes.
+				livingState.isInvisible = true;
+				livingState.isInvisibleToPlayer = false;
+			}
+			// bodyRot turns the complete model. yRot/xRot are local head rotations, so keeping
+			// them at zero prevents the head from snapping across +/-90 degrees in rear view.
+			livingState.bodyRot = (rearView ? 0.0F : 180.0F) + viewYaw;
+			livingState.yRot = 0.0F;
+			livingState.xRot = 0.0F;
+			livingState.boundingBoxWidth /= livingState.scale;
+			livingState.boundingBoxHeight /= livingState.scale;
+			livingState.scale = 1.0F;
+		}
+
+		Vector3f translation = new Vector3f(0.0F, entityRenderState.boundingBoxHeight / 2.0F + ENTITY_SCALE, 0.0F);
+		graphics.submitEntityRenderState(entityRenderState, size, translation, rotation, cameraRotation, x1, y1, x2, y2);
 	}
 }

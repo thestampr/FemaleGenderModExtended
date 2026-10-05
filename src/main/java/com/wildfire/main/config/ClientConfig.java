@@ -29,13 +29,15 @@ public class ClientConfig extends AbstractConfiguration {
 	public static final ClientConfig INSTANCE = new ClientConfig();
 
 	private ClientConfig() {
-		super(".", "female_gender_mod");
+		super(".", "female_gender_mod_extended");
 	}
 
 	// note: this option is not intended to be saved in any persistent manner
 	public static boolean RENDER_BREASTS = true;
+	public static boolean RENDER_BUTTS = true;
 
 	public static final BooleanConfigKey ARMOR_PHYSICS_OVERRIDE = new BooleanConfigKey("armor_physics_override", false);
+	public static final BooleanConfigKey ARMOR_STAND_PHYSICS = new BooleanConfigKey("armor_stand_physics", true);
 
 	public static final BooleanConfigKey FIRST_TIME_LOAD = new BooleanConfigKey("firstTimeLoad", true);
 	public static final BooleanConfigKey SHOW_TOAST = new BooleanConfigKey("showToast", true);
@@ -58,6 +60,7 @@ public class ClientConfig extends AbstractConfiguration {
 
 	static {
 		INSTANCE.setDefault(ARMOR_PHYSICS_OVERRIDE);
+		INSTANCE.setDefault(ARMOR_STAND_PHYSICS);
 		INSTANCE.setDefault(FIRST_TIME_LOAD);
 		INSTANCE.setDefault(CLOUD_SYNC_ENABLED);
 		INSTANCE.setDefault(AUTOMATIC_CLOUD_SYNC);

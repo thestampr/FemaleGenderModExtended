@@ -21,233 +21,195 @@ package com.wildfire.gui.screen;
 import com.wildfire.gui.FakeGUIPlayer;
 import com.wildfire.gui.GuiUtils;
 import com.wildfire.main.GenderConfigs;
-import com.wildfire.main.WildfireGender;
 import com.wildfire.main.contributors.Contributor;
 import com.wildfire.main.contributors.Contributors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
-import org.jetbrains.annotations.UnknownNullability;
-import org.joml.Matrix3x2fStack;
-import org.joml.Vector2f;
+import net.minecraft.util.Mth;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.UUID;
 
 @Environment(EnvType.CLIENT)
 public class WildfireCreditsScreen extends BaseWildfireScreen {
+	private static final int PANEL_MAX_WIDTH = 620;
+	private static final int PANEL_MARGIN = 16;
+	private static final int PANEL_TOP = 38;
+	private static final int CARD_HEIGHT = 72;
+	private static final int CARD_GAP = 7;
+	private static final int SECTION_HEADER_HEIGHT = 20;
+	private static final int SECTION_GAP = 9;
+	private static final int SCROLL_STEP = 28;
 
-	private static final Identifier CREDIT_CONTAINER = Identifier.fromNamespaceAndPath(WildfireGender.MODID, "textures/gui/credits/credit_container.png");
-	private static final Identifier CREDIT_OUTLINE = Identifier.fromNamespaceAndPath(WildfireGender.MODID, "textures/gui/credits/credit_outline.png");
-	private static final Identifier BUTTON_CONTAINER = Identifier.fromNamespaceAndPath(WildfireGender.MODID, "textures/gui/credits/button_container.png");
-	private static final Identifier TAB_CONTAINER = Identifier.fromNamespaceAndPath(WildfireGender.MODID, "textures/gui/credits/tab_container.png");
+	private final FakeGUIPlayer[] generalCredits = createCredits(false);
+	private final FakeGUIPlayer[] translatorCredits = createCredits(true);
+	private final FakeGUIPlayer[] extendedCredits = createCredits(Contributor.Role.MOD_EXTENDER);
 
-	//General contributor list
-	private final FakeGUIPlayer[] C_GENERAL = Contributors.getContributors().entrySet().stream()
-			.filter(it -> it.getValue().name() != null)
-			.filter(it -> Boolean.TRUE.equals(it.getValue().showInCredits()))
-			.filter(it -> it.getValue().getRole() != Contributor.Role.TRANSLATOR) // exclude translators
-			.sorted(Comparator.comparing(it -> it.getValue().name()))
-			.sorted(Comparator.comparing(it -> it.getValue().getRole()))
-			.map(it -> new FakeGUIPlayer(it.getValue().name(), it.getKey(), GenderConfigs.DEFAULT_FEMALE))
-			.toArray(FakeGUIPlayer[]::new);
-
-	//Translator list
-	private final FakeGUIPlayer[] C_TRANSLATORS = Contributors.getContributors().entrySet().stream()
-			.filter(it -> it.getValue().name() != null)
-			.filter(it -> Boolean.TRUE.equals(it.getValue().showInCredits()))
-			.filter(it -> it.getValue().getRole() == Contributor.Role.TRANSLATOR) // only have translators
-			.sorted(Comparator.comparing(it -> it.getValue().name()))
-			.sorted(Comparator.comparing(it -> it.getValue().getRole()))
-			.map(it -> new FakeGUIPlayer(it.getValue().name(), it.getKey(), GenderConfigs.DEFAULT_FEMALE))
-			.toArray(FakeGUIPlayer[]::new);
-
-	private final int boxesPerPage = 12;
-
-	private enum Category {
-		GENERAL, TRANSLATORS
-	}
-	private Category categoryTab = Category.GENERAL;
-	private int creditsPage = 0;
+	private int scrollOffset;
+	private int maxScroll;
 
 	public WildfireCreditsScreen(Screen parent, UUID uuid) {
 		super(Component.translatable("wildfire_gender.credits.title"), parent, uuid);
 	}
 
-	private int navigationY;
+	private static FakeGUIPlayer[] createCredits(boolean translators) {
+		return Contributors.getContributors().entrySet().stream()
+				.filter(entry -> entry.getValue().name() != null)
+				.filter(entry -> Boolean.TRUE.equals(entry.getValue().showInCredits()))
+				.filter(entry -> entry.getValue().getRole() != Contributor.Role.MOD_EXTENDER)
+				.filter(entry -> (entry.getValue().getRole() == Contributor.Role.TRANSLATOR) == translators)
+				.sorted(Comparator
+						.comparing((java.util.Map.Entry<UUID, Contributor> entry) -> entry.getValue().getRole())
+						.thenComparing(entry -> entry.getValue().name(), String.CASE_INSENSITIVE_ORDER))
+				.map(entry -> new FakeGUIPlayer(entry.getValue().name(), entry.getKey(), GenderConfigs.DEFAULT_FEMALE))
+				.toArray(FakeGUIPlayer[]::new);
+	}
+
+	private static FakeGUIPlayer[] createCredits(Contributor.Role role) {
+		return Contributors.getContributors().entrySet().stream()
+				.filter(entry -> entry.getValue().name() != null)
+				.filter(entry -> Boolean.TRUE.equals(entry.getValue().showInCredits()))
+				.filter(entry -> entry.getValue().getRole() == role)
+				.sorted(Comparator.comparing(entry -> entry.getValue().name(), String.CASE_INSENSITIVE_ORDER))
+				.map(entry -> new FakeGUIPlayer(entry.getValue().name(), entry.getKey(), GenderConfigs.DEFAULT_FEMALE))
+				.toArray(FakeGUIPlayer[]::new);
+	}
+
 	@Override
-	public void init() {
-
-		final var ref = new Object() {
-			@UnknownNullability
-			AbstractWidget prevPage, nextPage, generalTab, translatorTab;
-		};
-
-		navigationY = this.height / 2 + 82;
-
-		//category tab
-		ref.generalTab = addButton(builder -> builder
-				.message(() -> Component.translatable("wildfire_gender.credits.general"))
-				.position(this.width / 2 - 89, navigationY + 34)
-				.size(87, 13)
-				.active(categoryTab == Category.TRANSLATORS)
-				.onPress(button -> {
-					categoryTab = Category.GENERAL;
-					creditsPage = 0;
-					ref.prevPage.active = false;
-					ref.nextPage.active = creditsPage < getTotalPages()-1;
-					ref.generalTab.active = false;
-					ref.translatorTab.active = true;
-
-				}));
-
-		ref.translatorTab = addButton(builder -> builder
-				.message(() -> Component.translatable("wildfire_gender.credits.translators"))
-				.position(this.width / 2 + 2, navigationY + 34)
-				.size(87, 13)
-				.active(categoryTab == Category.GENERAL)
-				.onPress(button -> {
-					categoryTab = Category.TRANSLATORS;
-					creditsPage = 0;
-					ref.prevPage.active = false;
-					ref.nextPage.active = creditsPage < getTotalPages()-1;
-					ref.generalTab.active = true;
-					ref.translatorTab.active = false;
-				}));
-
-		//page tab
-		addButton(builder -> builder
-				.message(() -> Component.translatable("wildfire_gender.details.go_back"))
-				.position(this.width / 2 - 25, navigationY + 6)
-				.size(50, 13)
-				.onPress(button -> onClose()));
-
-		ref.nextPage = addButton(builder -> builder
-				.message(() -> Component.translatable("wildfire_gender.details.next_page"))
-				.position(this.width / 2 + 29, navigationY + 6)
-				.size(60, 13)
-				.active(creditsPage < getTotalPages()-1)
-				.onPress(button -> {
-					if(creditsPage < getTotalPages()-1) {
-						creditsPage++;
-					}
-					ref.prevPage.active = creditsPage != 0;
-					ref.nextPage.active = creditsPage < getTotalPages()-1;
-				}));
-
-		ref.prevPage = addButton(builder -> builder
-				.message(() -> Component.translatable("wildfire_gender.details.prev_page"))
-				.position(this.width / 2 - 89, navigationY + 6)
-				.size(60, 13)
-				.active(creditsPage != 0)
-				.onPress(button -> {
-					if(creditsPage > 0) {
-						creditsPage--;
-					}
-					ref.prevPage.active = creditsPage != 0;
-					ref.nextPage.active = creditsPage < getTotalPages();
-				}));
+	protected void init() {
+		addBackButton();
+		scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
 	}
 
 	@Override
 	public void tick() {
-		for(FakeGUIPlayer player : getActiveBoxes()) {
-			player.tick();
-		}
-	}
-
-	private int getTotalPages() {
-		return (int) Math.ceil((double) getActiveBoxes().length / boxesPerPage);
-	}
-
-	private FakeGUIPlayer[] getActiveBoxes() {
-		return categoryTab == Category.TRANSLATORS ? C_TRANSLATORS : C_GENERAL;
+		Arrays.stream(generalCredits).forEach(FakeGUIPlayer::tick);
+		Arrays.stream(translatorCredits).forEach(FakeGUIPlayer::tick);
+		Arrays.stream(extendedCredits).forEach(FakeGUIPlayer::tick);
 	}
 
 	@Override
 	public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-		this.renderTransparentBackground(ctx);
+		renderTransparentBackground(ctx);
 	}
 
 	@Override
 	public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+		int panelWidth = Math.min(PANEL_MAX_WIDTH, width - PANEL_MARGIN * 2);
+		int panelLeft = (width - panelWidth) / 2;
+		int panelRight = panelLeft + panelWidth;
+		int panelBottom = height - PANEL_MARGIN;
+		int contentTop = PANEL_TOP + 43;
+		int contentBottom = panelBottom - 8;
+		int innerLeft = panelLeft + 12;
+		int innerRight = panelRight - 12;
+		int innerWidth = innerRight - innerLeft;
+		int columns = innerWidth >= 500 ? 2 : 1;
 
-		Matrix3x2fStack mStack = ctx.pose();
+		maxScroll = Math.max(0, getContentHeight(columns) - (contentBottom - contentTop));
+		scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
 
-		mStack.pushMatrix();
-		GuiUtils.drawCenteredText(ctx, font, Component.translatable("wildfire_gender.credits.title"), width / 2, height / 2 - 100, ARGB.opaque(0xFFFFFF));
-		GuiUtils.drawCenteredText(ctx, font, Component.translatable("wildfire_gender.credits.description"), width / 2, height / 2 - 85, ARGB.opaque(0x888888));
-		mStack.popMatrix();
+		ctx.fill(panelLeft, PANEL_TOP, panelRight, panelBottom, 0xCC181818);
+		ctx.fill(panelLeft, PANEL_TOP, panelRight, PANEL_TOP + 1, 0xFF555555);
+		ctx.drawString(font, title, innerLeft, PANEL_TOP + 9, ARGB.opaque(0xFFFFFF), false);
+		ctx.drawString(font, Component.translatable("wildfire_gender.credits.description"), innerLeft,
+				PANEL_TOP + 24, ARGB.opaque(0x999999), false);
 
-		ctx.blit(RenderPipelines.GUI_TEXTURED, BUTTON_CONTAINER, this.width / 2 - (190 / 2), navigationY, 0, 0, 190, 25, 190, 25);
-		ctx.blit(RenderPipelines.GUI_TEXTURED, TAB_CONTAINER, this.width / 2 - (190 / 2), navigationY + 28, 0, 0, 190, 25, 190, 25);
+		ctx.enableScissor(innerLeft, contentTop, innerRight, contentBottom);
+		int contentY = contentTop - scrollOffset;
+		contentY = renderSection(ctx, Component.translatable("wildfire_gender.credits.general"), generalCredits,
+				innerLeft, innerWidth, contentY, columns, mouseX, mouseY);
+		contentY = renderSection(ctx, Component.translatable("wildfire_gender.credits.translators"), translatorCredits,
+				innerLeft, innerWidth, contentY, columns, mouseX, mouseY);
+		renderSection(ctx, Component.translatable("wildfire_gender.credits.extended"), extendedCredits,
+				innerLeft, innerWidth, contentY, columns, mouseX, mouseY);
+		ctx.disableScissor();
 
-		int columns = 6;
-		int boxW = 60;
-		int boxH = 74;
+		renderScrollbar(ctx, panelRight - 5, contentTop, contentBottom);
+		super.render(ctx, mouseX, mouseY, delta);
+	}
 
-		int startIndex = creditsPage * boxesPerPage;
-		int endIndex = Math.min(startIndex + boxesPerPage, getActiveBoxes().length);
+	private int renderSection(GuiGraphics ctx, Component heading, FakeGUIPlayer[] credits, int left, int width,
+	                          int y, int columns, int mouseX, int mouseY) {
+		ctx.drawString(font, heading, left, y + 4, ARGB.opaque(0xD0D0D0), false);
+		ctx.fill(left, y + 16, left + width, y + 17, 0x44555555);
+		y += SECTION_HEADER_HEIGHT;
 
-		int startY = height / 2 - (2 * boxH) / 2 + 4;
-
-		for (int i = startIndex; i < endIndex; i++) {
-			var creditBox = getActiveBoxes()[i];
-
-			int localIndex = i - startIndex;
-			int col = localIndex % columns;
-			int row = localIndex / columns;
-
-			int remaining = Math.min(endIndex - startIndex - (row * columns), columns);
-			int rowWidth = remaining * boxW;
-			int startX = (width / 2) - (rowWidth / 2) + 4;
-
-			int creditBoxX = startX + (col * boxW);
-			int creditBoxY = startY + (row * boxH);
-
-			ctx.blit(RenderPipelines.GUI_TEXTURED, CREDIT_CONTAINER, creditBoxX, creditBoxY, 0, 0, 52, 68, 52, 68);
-
-			ctx.pose().pushMatrix();
-			int color = ARGB.opaque(Objects.requireNonNull(creditBox.getRole()).getColor());
-			ctx.blit(RenderPipelines.GUI_TEXTURED, CREDIT_OUTLINE, creditBoxX + 3, creditBoxY + 3, 0, 0, 46, 53, 46, 53, color);
-			ctx.pose().popMatrix();
-
-			int xP = creditBoxX + (52 / 2);
-			int yP = creditBoxY + (68 / 2);
-			ctx.enableScissor(xP - 21, yP - 79, xP + 21, yP + 20);
-			GuiUtils.drawEntityOnScreen(ctx, xP - 38, yP - 29, xP + 38, yP + 59, 40, mouseX, mouseY + 35, creditBox.getEntity());
-			ctx.disableScissor();
-
-			mStack.pushMatrix();
-			mStack.translate(xP, yP + 47);
-			mStack.scale(new Vector2f(0.55f, 0.55f));
-			mStack.translate(-xP, (-yP) - 47);
-			GuiUtils.drawCenteredTextWrapped(ctx, font, Component.literal(creditBox.getName()), xP, yP + 7, (int) (50 * 1.45f), ARGB.opaque(0xFFFFFF));
-			mStack.popMatrix();
-
-			if (mouseX > xP - 24 && mouseX < xP + 23 && mouseY > yP + 22 && mouseY < yP + 31) {
-				List<Component> txtList = new ArrayList<>();
-				var role = creditBox.getRoleOrGeneric();
-				txtList.add(role.withColor(Component.empty()
-						.append(creditBox.getName())
-						.append(Component.literal(" - ").withStyle(ChatFormatting.DARK_GRAY))
-						.append(role.shortName())));
-				if (creditBox.getDescription() != null && !creditBox.getDescription().isEmpty()) {
-					txtList.add(Component.literal(creditBox.getDescription()).withStyle(ChatFormatting.GRAY));
-				}
-				ctx.setComponentTooltipForNextFrame(font, txtList, mouseX, mouseY);
-			}
+		int cardWidth = (width - CARD_GAP * (columns - 1)) / columns;
+		for(int i = 0; i < credits.length; i++) {
+			int column = i % columns;
+			int row = i / columns;
+			int cardX = left + column * (cardWidth + CARD_GAP);
+			int cardY = y + row * (CARD_HEIGHT + CARD_GAP);
+			renderCredit(ctx, credits[i], cardX, cardY, cardWidth, mouseX, mouseY);
 		}
 
-		//String pageInfo = (creditsPage) + " / " + (totalPages-1);
-		//GuiUtils.drawCenteredText(ctx, textRenderer, Text.literal(pageInfo), width / 2, height / 2, ColorHelper.fullAlpha(0xFFFFFF));
+		int rows = (credits.length + columns - 1) / columns;
+		return y + rows * (CARD_HEIGHT + CARD_GAP) + SECTION_GAP;
+	}
 
-		super.render(ctx, mouseX, mouseY, delta);
+	private void renderCredit(GuiGraphics ctx, FakeGUIPlayer credit, int x, int y, int width,
+	                          int mouseX, int mouseY) {
+		Contributor.Role role = credit.getRoleOrGeneric();
+		int roleColor = role.getColor() & 0xFFFFFF;
+		int subtleRoleColor = 0x24000000 | roleColor;
+		int portraitColor = 0x34000000 | roleColor;
+
+		ctx.fill(x, y, x + width, y + CARD_HEIGHT, subtleRoleColor);
+		ctx.fill(x, y, x + 2, y + CARD_HEIGHT, 0xCC000000 | roleColor);
+		ctx.fill(x + 6, y + 5, x + 66, y + CARD_HEIGHT - 5, portraitColor);
+
+		int portraitX = x + 36;
+		int portraitAnchorY = y + 88;
+		ctx.enableScissor(x + 6, y + 5, x + 66, y + CARD_HEIGHT - 5);
+		GuiUtils.drawEntityOnScreen(ctx, portraitX - 38, portraitAnchorY - 79, portraitX + 38,
+				portraitAnchorY + 69, 58, mouseX, mouseY + 35, credit.getEntity());
+		ctx.disableScissor();
+
+		int textLeft = x + 75;
+		int textRight = x + width - 8;
+		GuiUtils.drawScrollableTextWithoutShadow(GuiUtils.Justify.LEFT, ctx, font, Component.literal(credit.getName()),
+				textLeft, y + 12, textRight, y + 23, ARGB.opaque(roleColor));
+		ctx.drawString(font, role.shortName(), textLeft, y + 31, ARGB.opaque(0xB8B8B8), false);
+
+		String description = credit.getDescription();
+		if(description != null && !description.isBlank()) {
+			ctx.drawString(font, Component.literal(description), textLeft, y + 45, ARGB.opaque(0x888888), false);
+		}
+	}
+
+	private int getContentHeight(int columns) {
+		return getSectionHeight(generalCredits.length, columns)
+				+ getSectionHeight(translatorCredits.length, columns)
+				+ getSectionHeight(extendedCredits.length, columns);
+	}
+
+	private static int getSectionHeight(int creditCount, int columns) {
+		int rows = (creditCount + columns - 1) / columns;
+		return SECTION_HEADER_HEIGHT + rows * (CARD_HEIGHT + CARD_GAP) + SECTION_GAP;
+	}
+
+	private void renderScrollbar(GuiGraphics ctx, int x, int top, int bottom) {
+		if(maxScroll <= 0) return;
+		int viewportHeight = bottom - top;
+		int thumbHeight = Math.max(18, viewportHeight * viewportHeight / (viewportHeight + maxScroll));
+		int thumbTravel = viewportHeight - thumbHeight;
+		int thumbTop = top + Math.round(thumbTravel * (scrollOffset / (float)maxScroll));
+		ctx.fill(x, top, x + 2, bottom, 0x55333333);
+		ctx.fill(x, thumbTop, x + 2, thumbTop + thumbHeight, 0xCC999999);
+	}
+
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+		if(maxScroll > 0 && verticalAmount != 0) {
+			scrollOffset = Mth.clamp(scrollOffset - (int)Math.round(verticalAmount * SCROLL_STEP), 0, maxScroll);
+			return true;
+		}
+		return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 	}
 }

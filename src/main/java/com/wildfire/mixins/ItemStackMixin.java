@@ -59,7 +59,7 @@ abstract class ItemStackMixin {
 			@Local(argsOnly = true) Consumer<Component> textConsumer
 	) {
 		original.call(instance, slot, attributeModifierConsumer);
-		if(slot == EquipmentSlotGroup.CHEST && missingAttribute.isFalse()) {
+		if((slot == EquipmentSlotGroup.CHEST || slot == EquipmentSlotGroup.LEGS) && missingAttribute.isFalse()) {
 			var item = (ItemStack)(Object)this;
 			if(item.get(DataComponents.EQUIPPABLE) == null) {
 				return;

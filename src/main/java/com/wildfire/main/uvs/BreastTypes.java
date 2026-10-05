@@ -19,5 +19,14 @@
 package com.wildfire.main.uvs;
 
 public enum BreastTypes {
-	LEFT, RIGHT, LEFT_OVERLAY, RIGHT_OVERLAY
+	LEFT, RIGHT, LEFT_OVERLAY, RIGHT_OVERLAY,
+	LEFT_BUTT, RIGHT_BUTT, LEFT_BUTT_OVERLAY, RIGHT_BUTT_OVERLAY;
+
+	public boolean isLeft() {
+		return this == LEFT || this == LEFT_OVERLAY || this == LEFT_BUTT || this == LEFT_BUTT_OVERLAY;
+	}
+
+	public boolean isButt() {
+		return this == LEFT_BUTT || this == RIGHT_BUTT || this == LEFT_BUTT_OVERLAY || this == RIGHT_BUTT_OVERLAY;
+	}
 }

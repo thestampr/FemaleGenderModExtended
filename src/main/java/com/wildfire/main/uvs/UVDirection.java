@@ -66,9 +66,12 @@ public enum UVDirection {
 	}
 
 	public Component getDirectionText(BreastTypes type) {
+		if(this == NORTH && type.isButt()) {
+			return Component.translatable("wildfire_gender.uv_editor.faces.rear");
+		}
 
 		if (this == EAST || this == WEST) {
-			String key = (type == BreastTypes.LEFT || type == BreastTypes.LEFT_OVERLAY)
+			String key = type.isLeft()
 					? "wildfire_gender.uv_editor.faces.inner"
 					: "wildfire_gender.uv_editor.faces.outer";
 			return Component.translatable(key);

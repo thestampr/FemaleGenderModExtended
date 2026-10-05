@@ -30,6 +30,8 @@ import com.wildfire.main.entitydata.EntityConfig;
 import com.wildfire.main.entitydata.PlayerConfig;
 import com.wildfire.main.networking.ServerboundSyncPacket;
 import com.wildfire.main.networking.WildfireSync;
+import com.wildfire.render.ButtArmorLayer;
+import com.wildfire.render.ButtLayer;
 import com.wildfire.render.GenderArmorLayer;
 import com.wildfire.render.GenderLayer;
 import com.wildfire.render.GenderRenderState;
@@ -86,6 +88,7 @@ public final class WildfireEventHandler {
 
 	private static final KeyMapping CONFIG_KEYBIND;
 	private static final KeyMapping TOGGLE_KEYBIND;
+	private static final KeyMapping TOGGLE_BUTT_KEYBIND;
 	private static int timer = 0;
 
 	public static KeyMapping getConfigKeybind() {
@@ -107,9 +110,15 @@ public final class WildfireEventHandler {
 				KeyBindingHelper.registerKeyBinding(keybind);
 				return keybind;
 			});
+			TOGGLE_BUTT_KEYBIND = Util.make(() -> {
+				KeyMapping keybind = new KeyMapping("key.wildfire_gender.toggle_butt", GLFW.GLFW_KEY_UNKNOWN, category);
+				KeyBindingHelper.registerKeyBinding(keybind);
+				return keybind;
+			});
 		} else {
 			CONFIG_KEYBIND = null;
 			TOGGLE_KEYBIND = null;
+			TOGGLE_BUTT_KEYBIND = null;
 		}
 	}
 
@@ -177,14 +186,20 @@ public final class WildfireEventHandler {
 		if(playerConfig == null || !playerConfig.getGender().canHaveBreasts()) return;
 
 		var equippableComponent = item.get(DataComponents.EQUIPPABLE);
-		if(equippableComponent == null || equippableComponent.slot() != EquipmentSlot.CHEST) return;
+		if(equippableComponent == null) return;
+		EquipmentSlot slot = equippableComponent.slot();
+		if(slot != EquipmentSlot.CHEST && slot != EquipmentSlot.LEGS) return;
 
 		var config = WildfireHelper.getArmorConfig(item);
 		// don't show a +0 tooltip on items that don't interact with physics (e.g. Elytra)
-		if(!config.coversBreasts() || config.physicsResistance() == 0f) return;
+		if(slot == EquipmentSlot.CHEST && !config.coversBreasts()) return;
+		if(config.physicsResistance() == 0f) return;
 
 		var formatted = WildfireHelper.toFormattedPercent(config.physicsResistance()) + "%";
-		tooltipAppender.accept(Component.translatable("wildfire_gender.armor.tooltip", formatted).withStyle(ChatFormatting.LIGHT_PURPLE));
+		String translationKey = slot == EquipmentSlot.LEGS
+				? "wildfire_gender.armor.butt_tooltip"
+				: "wildfire_gender.armor.tooltip";
+		tooltipAppender.accept(Component.translatable(translationKey, formatted).withStyle(ChatFormatting.LIGHT_PURPLE));
 	}
 
 	@Environment(EnvType.CLIENT)
@@ -208,9 +223,12 @@ public final class WildfireEventHandler {
 	                                         EntityRendererProvider.Context context) {
 		if(entityRenderer instanceof AvatarRenderer<?> playerRenderer) {
 			registrationHelper.register(new GenderLayer<>(playerRenderer));
+			registrationHelper.register(new ButtLayer<>(playerRenderer));
+			registrationHelper.register(new ButtArmorLayer<>(playerRenderer, context.getEquipmentAssets(), context.getEquipmentRenderer()));
 			registrationHelper.register(new GenderArmorLayer<>(playerRenderer, context.getEquipmentAssets(), context.getEquipmentRenderer()));
 			registrationHelper.register(new HolidayFeaturesRenderer(playerRenderer));
 		} else if(entityRenderer instanceof ArmorStandRenderer armorStandRenderer) {
+			registrationHelper.register(new ButtArmorLayer<>(armorStandRenderer, context.getEquipmentAssets(), context.getEquipmentRenderer()));
 			registrationHelper.register(new GenderArmorLayer<>(armorStandRenderer, context.getEquipmentAssets(), context.getEquipmentRenderer()));
 		}
 	}
@@ -250,6 +268,9 @@ public final class WildfireEventHandler {
 
 		if(TOGGLE_KEYBIND.consumeClick() && client.screen == null) {
 			ClientConfig.RENDER_BREASTS ^= true;
+		}
+		if(TOGGLE_BUTT_KEYBIND.consumeClick() && client.screen == null) {
+			ClientConfig.RENDER_BUTTS ^= true;
 		}
 		if(CONFIG_KEYBIND.consumeClick() && client.screen == null) {
 			WardrobeBrowserScreen.open(client, client.player);
@@ -326,16 +347,16 @@ public final class WildfireEventHandler {
 		if(EntityConfig.isSupportedEntity(entity)) {
 			EntityConfig cfg = EntityConfig.getEntity(entity);
 			if(entity instanceof ArmorStand) {
-				cfg.readFromStack(entity.getItemBySlot(EquipmentSlot.CHEST));
+				cfg.readFromArmor(entity.getItemBySlot(EquipmentSlot.CHEST), entity.getItemBySlot(EquipmentSlot.LEGS));
 			}
-			cfg.tickBreastPhysics(entity);
+			cfg.tickBodyPhysics(entity);
 		}
 	}
 
 	/**
-	 * Apply player settings to chestplates equipped onto armor stands
+	 * Apply player settings to chestplates and leggings equipped onto armor stands.
 	 */
-	private static void onEquipArmorStand(Player player, ItemStack item) {
+	private static void onEquipArmorStand(Player player, EquipmentSlot slot, ItemStack item) {
 		PlayerConfig playerConfig = WildfireGender.getPlayerById(player.getUUID());
 		if(playerConfig == null) {
 			// while we shouldn't have our tag on the stack still, we're still checking to catch any armor
@@ -348,9 +369,11 @@ public final class WildfireEventHandler {
 
 		// Note that we always attach player data to the item stack as a server has no concept of resource packs,
 		// making it impossible to compare against any armor data that isn't registered through the mod API.
-		BreastDataComponent component = BreastDataComponent.fromPlayer(player, playerConfig);
+		BreastDataComponent component = BreastDataComponent.fromPlayer(player, playerConfig, slot);
 		if(component != null) {
 			component.write(item);
+		} else {
+			BreastDataComponent.removeFromStack(item);
 		}
 	}
 }
