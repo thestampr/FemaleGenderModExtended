@@ -1,93 +1,95 @@
 <div align="center">
 
-![Mod Banner](https://i.imgur.com/WLCTnCK.png)
+<img src="https://raw.githubusercontent.com/thestampr/FemaleGenderModExtended/main/banner.png" alt="Female Gender Mod Extended" width="100%">
 
-# Female Gender Mod
+# FemaleGenderModExtended
 
-![Cloud sync player count badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwfgm.celestialfault.dev%2Fstats&query=synced_users&label=Cloud%20synced%20players)
+An extended Fabric edition of Female Gender Mod for Minecraft 1.21.11.
+
+![Minecraft 1.21.11](https://img.shields.io/badge/Minecraft-1.21.11-62B47A)
+![Fabric](https://img.shields.io/badge/Loader-Fabric-DBD0B4)
+![Java 21](https://img.shields.io/badge/Java-21-E76F00)
+![LGPL-3.0-or-later](https://img.shields.io/badge/License-LGPL--3.0--or--later-blue)
 
 </div>
 
-This mod adds extra customization options to the player model by adding breasts for a more feminine appearance.
+> [!IMPORTANT]
+> FemaleGenderModExtended is an unofficial fork of
+> [Female Gender Mod](https://github.com/FemaleGenderMod/FemaleGenderMod). It keeps the upstream
+> `wildfire_gender` mod ID for compatibility, so it replaces the original mod and must not be installed alongside it.
 
-This mod is primarily client-sided, but your settings will also be automatically synced with other connected players
-if the mod is also installed on the server.
+## What Extended adds
 
-The mod also features cloud sync support (as of 4.0 on 1.21.2+) to allow for syncing your customization settings
-to other players on servers that don't have the mod installed.
+- Separate breast and butt appearance controls, including size, position, separation, and depth.
+- Independent or linked breast and butt physics with intensity and momentum controls.
+- Classic and experimental realistic body rendering with soft-body deformation.
+- Armor-aware breast and butt rendering, including armor textures, trims, glint, and configurable hiding and physics.
+- An in-game texture editor for body, overlay, jacket, and pants UV layouts.
+- Optional Player Animation Library integration so supported custom animations can influence body physics.
+- Multiplayer synchronization of the extended player profile when the server also runs FemaleGenderModExtended.
 
-## Default Controls
-H - Open Customization Settings
+## Requirements
 
-[Pre 1.21.6] G - Open Customization Settings
+- Minecraft 1.21.11
+- Fabric Loader 0.15.0 or newer
+- Fabric API modules required by the mod
+- Java 21
+- Player Animation Library 1.1.10 or newer is optional
+
+## Installation
+
+1. Install Fabric Loader and Fabric API for Minecraft 1.21.11.
+2. Download the latest FemaleGenderModExtended JAR from this repository's
+   [Releases](https://github.com/thestampr/FemaleGenderModExtended/releases) page when a release is available.
+3. Place the JAR in the Minecraft `mods` folder.
+4. Remove the original Female Gender Mod JAR if it is installed.
+
+Press **H** in game to open Character Personalization.
+
+## Synchronization and compatibility
+
+FemaleGenderModExtended is primarily client-sided. Other players need a compatible profile source before their
+extended appearance can be shown correctly:
+
+- On a server with FemaleGenderModExtended installed, the extended profile can be synchronized between players.
+- The upstream public cloud service understands the original breast profile but not the Extended butt data. Butt
+  settings therefore require server-assisted FemaleGenderModExtended synchronization.
+- Animation mods that transform the vanilla torso model are supported through that transform path. Mods that replace
+  the player renderer completely may require a dedicated compatibility adapter.
+- The mod currently declares conflicts with 3D Skin Layers and Essential.
+
+## Building from source
+
+Clone the repository and run the Gradle build from its root:
+
+```powershell
+.\gradlew.bat build
+```
+
+On Linux or macOS:
+
+```bash
+./gradlew build
+```
+
+The built JAR is written to `build/libs`.
+
+## Credits and attribution
+
+FemaleGenderModExtended is based on
+[Female Gender Mod](https://github.com/FemaleGenderMod/FemaleGenderMod), originally created by **WildfireRomeo** and
+developed by its maintainers and contributors. This fork began from upstream release
+[`5.0.0-Beta.3+1.21.11`](https://github.com/FemaleGenderMod/FemaleGenderMod/tree/5.0.0-Beta.3%2B1.21.11).
+
+Extended development is maintained by [thestampr](https://github.com/thestampr). This project is not affiliated with
+or supported by the upstream maintainers; issues specific to Extended should be reported in this repository's
+[issue tracker](https://github.com/thestampr/FemaleGenderModExtended/issues).
+
+Additional third-party asset attribution is retained in
+[`CREDITS.txt`](./src/main/resources/assets/wildfire_gender/CREDITS.txt).
 
 ## License
 
-The Female Gender Mod is licensed under the GNU LGPLv3, a free and open-source license. For more information,
-please see the [license file](./LICENSE).
-
-## Frequently Asked Question
-
-<details>
-<summary>1) Can you include a male bulge?</summary>
-
-This mod is centered around female characters, so a male bulge won't be added.
-
-</details>
-
-<details>
-<summary>2) If I were to play on a realm with my friends, and we all used this mod, would they see my character with my settings?</summary>
-
-If everyone has **Cloud Sync** enabled, then yes. There is a delay in updating gender settings though, for performance reasons. We are going to actively monitor it to see if we can reduce or even possibly remove the delay in the future.
-
-</details>
-
-<details>
-<summary>3) What about adding female butts?</summary>
-
-No.
-
-</details>
-
-<details>
-<summary>4) Any plans for additional breast models?</summary>
-
-~~Yeah, I might introduce more breast models down the line. It's on the to-do list but not a top priority. Suggestions for unique ideas are welcome, as long as they're original and don't overlap with other mods.~~
-This isn't planned anymore, though isn't entirely off the table.
-
-</details>
-
-<details>
-<summary>5) Can we have larger breasts?</summary>
-
-Nope. Stop asking. It isn't happening.
-
-</details>
-
-<details>
-<summary>6) Will you port to past versions?</summary>
-
-I am not providing support for past versions of Minecraft. The mod will only be developed on the most recent version of the game.
-
-</details>
-
-<details>
-<summary>7) Is this mod compatible with Minecraft: Bedrock Edition (Mobile)?</summary>
-
-No, and it never will be.
-
-</details>
-
-<details>
-<summary>8) Why when I press 'H' ('G' in versions before 1.21.6) it opens the customization screen, and not the player list?</summary>
-
-The option to edit other players' characters has been removed and will not be re-added. Modifying other players' characters without their consent is not recommended, and many people found it wrong to be able to do that. It was never intended to be a feature, it was just inherited from the UI design.
-
-</details>
-
-<details>
-<summary>9) Could you change the player model's height or give it more curvy looking hips?</summary>
-
-No, I don't want to edit the base game features. The breast model is an added layer to the default model. If I were to do a waist/torso thing, it would be editing the player model. It would also probably break compatibility with a lot more mods as well.
-
-</details>
+FemaleGenderModExtended retains the upstream copyright notices and is distributed under the
+[GNU Lesser General Public License version 3 or later](./LICENSE). Modified versions must preserve the applicable
+license and attribution notices.

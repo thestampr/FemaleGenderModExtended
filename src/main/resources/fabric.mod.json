@@ -2,8 +2,8 @@
 	"schemaVersion": 1,
 	"id": "wildfire_gender",
 	"version": "${version}+${minecraft_version}",
-	"name": "Female Gender Mod",
-	"description": "Adds extra customization options to the player model by adding breasts for a more feminine appearance",
+	"name": "FemaleGenderModExtended",
+	"description": "FGM ext adds synchronized breast and butt customization, physics, and texture controls.",
 	"authors": [
 		"WildfireRomeo",
 		"celeste",
@@ -17,13 +17,15 @@
 		"Kichura",
 		"PinguinLars",
 		"Powerless001",
-		"Crosby"
+		"Crosby",
+		"thestampr"
 	],
 	"contact": {
-		"sources": "https://github.com/FemaleGenderMod/FemaleGenderMod",
-		"issues": "https://github.com/FemaleGenderMod/FemaleGenderMod/issues"
+		"homepage": "https://github.com/thestampr/FemaleGenderModExtended",
+		"sources": "https://github.com/thestampr/FemaleGenderModExtended",
+		"issues": "https://github.com/thestampr/FemaleGenderModExtended/issues"
 	},
-	"license": "LGPL-3.0",
+	"license": "LGPL-3.0-or-later",
 	"icon": "assets/wildfire_gender/icon.png",
 	"environment": "*",
 	"entrypoints": {
@@ -53,16 +55,12 @@
 		"minecraft": "${minecraft_dependency}",
 		"java": ">=21"
 	},
+	"suggests": {
+		"player_animation_library": ">=1.1.10+mc.1.21.11"
+	},
 	"conflicts": {
 		"skinlayers": "*",
 		"essential": "*",
 		"essential-loader": "*"
-	},
-	"custom": {
-		"modmenu": {
-			"links": {
-				"modmenu.discord": "https://discord.gg/4VDfQu4Wgb"
-			}
-		}
 	}
 }
