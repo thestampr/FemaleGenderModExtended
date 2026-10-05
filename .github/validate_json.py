@@ -27,7 +27,7 @@ class Group:
         print(f"::endgroup::")
 
 for file in jsons:
-    with open(file) as f:
+    with open(file, encoding="utf-8") as f:
         try:
             json.load(f)
         except JSONDecodeError as e:
@@ -38,7 +38,7 @@ for file in jsons:
 if should_fail:
     exit(1)
 
-with open("src/main/resources/assets/wildfire_gender/lang/en_us.json") as f:
+with open("src/main/resources/assets/wildfire_gender/lang/en_us.json", encoding="utf-8") as f:
     root_translations = json.load(f)
 
 for translation in glob("src/main/resources/assets/wildfire_gender/lang/*.json"):
@@ -47,7 +47,7 @@ for translation in glob("src/main/resources/assets/wildfire_gender/lang/*.json")
         continue
 
     try:
-        with open(file) as f:
+        with open(file, encoding="utf-8") as f:
             strings = json.load(f)
     except JSONDecodeError:
         continue
