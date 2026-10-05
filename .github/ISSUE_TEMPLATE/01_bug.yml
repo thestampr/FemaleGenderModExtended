@@ -1,31 +1,20 @@
 name: Bug Report
-description: File a bug report.
+description: Report a reproducible problem with FemaleGenderModExtended.
 labels: ["Bug"]
 body:
-  - type: dropdown
-    id: mod-loader
-    attributes:
-      label: "Which mod loader are you using?"
-      options:
-        - "Fabric"
-        - "NeoForge"
-    validations:
-      required: true
-
   - type: input
     id: version
     attributes:
       label: "What Minecraft & mod version are you using?"
-      placeholder: "Minecraft 1.x.y, Female Gender Mod x.y.z"
+      placeholder: "Minecraft 1.21.11, FemaleGenderModExtended 0.1.0"
     validations:
       required: true
 
   - type: input
-    id: modloader-version
+    id: fabric-version
     attributes:
-      label: "What Fabric / NeoForge version are you using?"
-      description: |
-        If you're using Fabric, please also include the relevant Fabric API version.
+      label: "What Fabric versions are you using?"
+      description: Include both Fabric Loader and Fabric API versions.
       placeholder: "Fabric Loader 0.x.y, Fabric API 0.x.y"
 
   - type: textarea
@@ -42,7 +31,7 @@ body:
     attributes:
       label: "What actually happened?"
       description: |
-        **Do not directly paste logs here!** Instead, upload them to [mclo.gs](https://mclo.gs/) or [Gist](https://gist.github.com/) and link it here.
+        Do not paste long logs directly. Upload them to [mclo.gs](https://mclo.gs/) or a GitHub Gist and include the link.
       placeholder: |
         The game crashed
     validations:
@@ -81,11 +70,10 @@ body:
         Please list any other mods involved if this issue relates to mod compatibility.
 
   - type: checkboxes
-    id: checked-faq
+    id: checked-existing-issues
     attributes:
-      label: "This is not mentioned in the FAQ"
-      description: |
-        Please check if this is not mentioned in the FAQ before making this issue.
+      label: "Existing issues"
+      description: Search existing issues before submitting a new report.
       options:
-        - label: This issue is not mentioned in the FAQ
+        - label: I searched existing issues and did not find this problem.
           required: true

@@ -1,5 +1,1 @@
-blank_issues_enabled: true
-contact_links:
-  - name: Support Questions
-    url: https://discord.gg/4VDfQu4Wgb
-    about: For any general support questions.
+blank_issues_enabled: false

@@ -1,4 +1,4 @@
-﻿name: Build Fabric mod with Gradle
+name: Build FemaleGenderModExtended
 on: [pull_request, push]
 permissions:
   contents: read
@@ -30,8 +30,8 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew build
     - name: Upload compiled artifacts
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4b # 5.0.0
       with:
-        name: WFGM-artifacts-${{ steps.ref.outputs.branch }}
+        name: FemaleGenderModExtended-${{ steps.ref.outputs.branch }}
         path: build/libs/*.jar
         if-no-files-found: error

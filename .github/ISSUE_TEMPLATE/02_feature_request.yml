@@ -1,5 +1,5 @@
 name: Feature Request
-description: File a feature request.
+description: Suggest an improvement for FemaleGenderModExtended.
 labels: ["Suggestion"]
 body:
   - type: textarea
@@ -13,8 +13,7 @@ body:
     id: no-existing-request
     attributes:
       label: "This is not an existing request"
-      description: |
-        Please make sure to look through the existing issues and the FAQ to make sure that this request has not been made before.
+      description: Search existing issues before submitting a new request.
       options:
-        - label: This request has not been made before, and is not mentioned in the FAQ
+        - label: I searched existing issues and did not find this request.
           required: true
