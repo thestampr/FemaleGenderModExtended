@@ -7,7 +7,7 @@ package com.wildfire.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.wildfire.main.WildfireHelper;
 import com.wildfire.main.WildfireGender;
-import com.wildfire.main.config.Configuration;
+import com.wildfire.main.uvs.ButtUvLayouts;
 import com.wildfire.mixins.accessors.EquipmentLayerRendererAccessor;
 import com.wildfire.render.WildfireModelRenderer.ButtModelBox;
 import net.fabricmc.api.EnvType;
@@ -86,29 +86,30 @@ public final class ButtArmorLayer<S extends HumanoidRenderState, M extends Human
 		if(leftArmor != null && previousRealisticModel == realistic) return;
 		previousRealisticModel = realistic;
 		if(realistic) {
-			leftArmor = realisticModels(BreastSide.LEFT, Configuration.LEFT_BUTT_UV_LAYOUT.getDefault(), 0, true);
-			rightArmor = realisticModels(BreastSide.RIGHT, Configuration.RIGHT_BUTT_UV_LAYOUT.getDefault(), 0, true);
-			leftTrim = realisticModels(BreastSide.LEFT, Configuration.LEFT_BUTT_UV_LAYOUT.getDefault(), 0.001f, false);
-			rightTrim = realisticModels(BreastSide.RIGHT, Configuration.RIGHT_BUTT_UV_LAYOUT.getDefault(), 0.001f, false);
+			leftArmor = realisticModels(BreastSide.LEFT, 0, true);
+			rightArmor = realisticModels(BreastSide.RIGHT, 0, true);
+			leftTrim = realisticModels(BreastSide.LEFT, 0.001f, false);
+			rightTrim = realisticModels(BreastSide.RIGHT, 0.001f, false);
 			return;
 		}
 
-		leftArmor = classicModels(Configuration.LEFT_BUTT_UV_LAYOUT.getDefault(), 0);
-		rightArmor = classicModels(Configuration.RIGHT_BUTT_UV_LAYOUT.getDefault(), 0);
-		leftTrim = classicModels(Configuration.LEFT_BUTT_UV_LAYOUT.getDefault(), 0.001f);
-		rightTrim = classicModels(Configuration.RIGHT_BUTT_UV_LAYOUT.getDefault(), 0.001f);
+		leftArmor = classicModels(true, 0);
+		rightArmor = classicModels(false, 0);
+		leftTrim = classicModels(true, 0.001f);
+		rightTrim = classicModels(false, 0.001f);
 	}
 
-	private static ArmorModels classicModels(com.wildfire.main.uvs.UVLayout layout, float delta) {
-		return new ArmorModels(new ButtModelBox(64, 32, -2, -1, 0, 4, 4, 3, delta, layout, false),
+	private static ArmorModels classicModels(boolean left, float delta) {
+		return new ArmorModels(new ButtModelBox(64, 32, -2, -1, 0, 4, 4, 3, delta,
+				ButtUvLayouts.torsoWhole(left, false), false),
 				null, null, null);
 	}
 
-	private static ArmorModels realisticModels(BreastSide side, com.wildfire.main.uvs.UVLayout torsoLayout,
-	                                           float delta, boolean includeAttachment) {
+	private static ArmorModels realisticModels(BreastSide side, float delta, boolean includeAttachment) {
 		float x = side.isLeft ? -4 : 0;
-		var upperUV = upperLayout(torsoLayout, side, true);
-		var lowerUV = lowerTwoRowsLayout(legLayout(0, 16), side, true);
+		var sheet = ButtUvLayouts.torsoWhole(side.isLeft, false);
+		var upperUV = upperLayout(sheet, side, true);
+		var lowerUV = lowerLayout(sheet, side, true);
 		ButtModelBox upper = new ButtModelBox(64, 32, x, 9, 0, 4, 3, 3, delta,
 				upperUV, true, 9, 14, 8, 5);
 		ButtModelBox lower = new ButtModelBox(64, 32, x, 12, 0, 4, 2, 3, delta,

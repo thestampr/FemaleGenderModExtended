@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.wildfire.main.WildfireGender;
 import com.wildfire.main.WildfireHelper;
 import com.wildfire.main.config.ClientConfig;
+import com.wildfire.main.uvs.ButtUvLayouts;
 import com.wildfire.main.uvs.UVDirection;
 import com.wildfire.main.uvs.UVLayout;
 import com.wildfire.main.uvs.UVQuad;
@@ -34,12 +35,10 @@ import java.util.Objects;
 @Environment(EnvType.CLIENT)
 public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>> extends BodyPartLayer<S, M> {
 	private static final float DEG_TO_RAD = (float)(Math.PI / 180);
-	private static final float BASE_TILT_DEGREES = -24f;
+	private static final float BASE_TILT_DEGREES = 30f;
+	private static final float CLASSIC_LEG_PIVOT_X = 1.9f * 0.0625f;
+	private static final float CLASSIC_LEG_PIVOT_Y = 12f * 0.0625f;
 	private static final UVQuad HIDDEN_FACE = new UVQuad(0, 0, 0, 0);
-	private static final UVLayout RIGHT_LEG_BASE = legLayout(0, 16);
-	private static final UVLayout LEFT_LEG_BASE = legLayout(16, 48);
-	private static final UVLayout RIGHT_LEG_OVERLAY = legLayout(0, 32);
-	private static final UVLayout LEFT_LEG_OVERLAY = legLayout(0, 48);
 
 	@UnknownNullability("null until the first render")
 	private ButtModelBox leftUpperButt, rightUpperButt;
@@ -136,25 +135,23 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 		previousShowInnerFaces = showInnerFaces;
 		previousRealisticModel = state.realisticModel;
 		if(state.realisticModel) {
-			// Torso-local experimental form: each half now uses the breast's exact 4x5x3
-			// volume. The single torso texture row stretches over the three torso-local model
-			// rows, followed by the first two leg texture rows below the body.
+			// Each half keeps its two mesh pieces, but samples one continuous torso UV sheet.
 			leftUpperButt = new ButtModelBox(64, 64, -4, 9, 0, 4, 3, 3, 0,
 					upperLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 5);
 			rightUpperButt = new ButtModelBox(64, 64, 0, 9, 0, 4, 3, 3, 0,
 					upperLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 5);
 			leftLowerButt = new ButtModelBox(64, 64, -4, 12, 0, 4, 2, 3, 0,
-					lowerTwoRowsLayout(RIGHT_LEG_BASE, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 3);
+					lowerLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 3);
 			rightLowerButt = new ButtModelBox(64, 64, 0, 12, 0, 4, 2, 3, 0,
-					lowerTwoRowsLayout(LEFT_LEG_BASE, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 3);
+					lowerLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 3);
 			leftUpperButtWear = new ButtOverlayModelBox(64, 64, -4, 9, 0, 4, 3, 3, 0,
 					upperLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 5);
 			rightUpperButtWear = new ButtOverlayModelBox(64, 64, 0, 9, 0, 4, 3, 3, 0,
 					upperLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 5);
 			leftLowerButtWear = new ButtOverlayModelBox(64, 64, -4, 12, 0, 4, 2, 3, 0,
-					lowerTwoRowsLayout(RIGHT_LEG_OVERLAY, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 3);
+					lowerLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 3);
 			rightLowerButtWear = new ButtOverlayModelBox(64, 64, 0, 12, 0, 4, 2, 3, 0,
-					lowerTwoRowsLayout(LEFT_LEG_OVERLAY, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 3);
+					lowerLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 3);
 
 			// A fixed two-pixel-deep backing occupies only the torso's rear half. Unlike the rounded
 			// shell it has a real rear face and side walls, so oblique views cannot see through the
@@ -164,66 +161,48 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 			rightUpperAttachment = new ButtModelBox(64, 64, 0, 9, 0.01f, 4, 3, 2, 0,
 					upperLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces));
 			leftLowerAttachment = new ButtModelBox(64, 64, -4, 12, 0.01f, 4, 2, 2, 0,
-					lowerTwoRowsLayout(RIGHT_LEG_BASE, BreastSide.LEFT, showInnerFaces));
+					lowerLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces));
 			rightLowerAttachment = new ButtModelBox(64, 64, 0, 12, 0.01f, 4, 2, 2, 0,
-					lowerTwoRowsLayout(LEFT_LEG_BASE, BreastSide.RIGHT, showInnerFaces));
+					lowerLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces));
 			leftUpperAttachmentWear = new ButtOverlayModelBox(64, 64, -4, 9, 0.01f, 4, 3, 2, 0,
 					upperLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces));
 			rightUpperAttachmentWear = new ButtOverlayModelBox(64, 64, 0, 9, 0.01f, 4, 3, 2, 0,
 					upperLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces));
 			leftLowerAttachmentWear = new ButtOverlayModelBox(64, 64, -4, 12, 0.01f, 4, 2, 2, 0,
-					lowerTwoRowsLayout(RIGHT_LEG_OVERLAY, BreastSide.LEFT, showInnerFaces));
+					lowerLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces));
 			rightLowerAttachmentWear = new ButtOverlayModelBox(64, 64, 0, 12, 0.01f, 4, 2, 2, 0,
-					lowerTwoRowsLayout(LEFT_LEG_OVERLAY, BreastSide.RIGHT, showInnerFaces));
+					lowerLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces));
 			return;
 		}
 
 		leftUpperAttachment = rightUpperAttachment = leftLowerAttachment = rightLowerAttachment = null;
 		leftUpperAttachmentWear = rightUpperAttachmentWear = leftLowerAttachmentWear = rightLowerAttachmentWear = null;
-		// Classic keeps the established one torso row plus three leg rows. Its renderer now
-		// reproduces the former leg pivot beneath the torso rather than inheriting leg rotation.
+		// Classic keeps one upper row plus three lower rows, all sampled from the torso.
+		// Its standing pose reproduces the former leg pivot without inheriting leg rotation.
 		leftUpperButt = new ButtModelBox(64, 64, -2, -1, 0, 4, 1, 3, 0,
 				upperLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces), false);
 		rightUpperButt = new ButtModelBox(64, 64, -2, -1, 0, 4, 1, 3, 0,
 				upperLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces), false);
 		leftLowerButt = new ButtModelBox(64, 64, -2, 0, 0, 4, 3, 3, 0,
-				lowerLayout(RIGHT_LEG_BASE, BreastSide.LEFT, showInnerFaces), false);
+				lowerLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces), false);
 		rightLowerButt = new ButtModelBox(64, 64, -2, 0, 0, 4, 3, 3, 0,
-				lowerLayout(LEFT_LEG_BASE, BreastSide.RIGHT, showInnerFaces), false);
+				lowerLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces), false);
 		leftUpperButtWear = new ButtOverlayModelBox(64, 64, -2, -1, 0, 4, 1, 3, 0,
 				upperLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces), false);
 		rightUpperButtWear = new ButtOverlayModelBox(64, 64, -2, -1, 0, 4, 1, 3, 0,
 				upperLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces), false);
 		leftLowerButtWear = new ButtOverlayModelBox(64, 64, -2, 0, 0, 4, 3, 3, 0,
-				lowerLayout(RIGHT_LEG_OVERLAY, BreastSide.LEFT, showInnerFaces), false);
+				lowerLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces), false);
 		rightLowerButtWear = new ButtOverlayModelBox(64, 64, -2, 0, 0, 4, 3, 3, 0,
-				lowerLayout(LEFT_LEG_OVERLAY, BreastSide.RIGHT, showInnerFaces), false);
+				lowerLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces), false);
 	}
 
 	protected static UVLayout upperLayout(UVLayout source, BreastSide side, boolean showInnerFaces) {
-		UVLayout result = bottomRow(source);
-		// The lower cap touches the leg-sourced box and must not render as a loose plate.
-		result.put(UVDirection.UP, HIDDEN_FACE);
-		return hideInnerFace(result, side, showInnerFaces);
+		return hideInnerFace(ButtUvLayouts.meshSection(source, true), side, showInnerFaces);
 	}
 
-	private static UVLayout lowerLayout(UVLayout source, BreastSide side, boolean showInnerFaces) {
-		UVLayout result = source.copy();
-		// The upper cap touches the torso-sourced box and is internal geometry.
-		result.put(UVDirection.DOWN, HIDDEN_FACE);
-		return hideInnerFace(result, side, showInnerFaces);
-	}
-
-	protected static UVLayout lowerTwoRowsLayout(UVLayout source, BreastSide side, boolean showInnerFaces) {
-		UVLayout result = source.copy();
-		for(var entry : source.getQuads().entrySet()) {
-			UVQuad quad = entry.getValue();
-			int direction = Integer.signum(quad.y2() - quad.y1());
-			int height = Math.min(Math.abs(quad.y2() - quad.y1()), 2);
-			result.put(entry.getKey(), new UVQuad(quad.x1(), quad.y1(), quad.x2(), quad.y1() + direction * height));
-		}
-		result.put(UVDirection.DOWN, HIDDEN_FACE);
-		return hideInnerFace(result, side, showInnerFaces);
+	protected static UVLayout lowerLayout(UVLayout source, BreastSide side, boolean showInnerFaces) {
+		return hideInnerFace(ButtUvLayouts.meshSection(source, false), side, showInnerFaces);
 	}
 
 	private static UVLayout hideInnerFace(UVLayout layout, BreastSide side, boolean showInnerFaces) {
@@ -233,25 +212,6 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 		return layout;
 	}
 
-	private static UVLayout bottomRow(UVLayout source) {
-		UVLayout result = source.copy();
-		for(var entry : source.getQuads().entrySet()) {
-			UVQuad quad = entry.getValue();
-			result.put(entry.getKey(), new UVQuad(quad.x1(), Math.max(quad.y1(), quad.y2() - 1), quad.x2(), quad.y2()));
-		}
-		return result;
-	}
-
-	protected static UVLayout legLayout(int textureX, int textureY) {
-		return new UVLayout(
-				new UVQuad(textureX, textureY + 4, textureX + 4, textureY + 7),
-				new UVQuad(textureX + 8, textureY + 4, textureX + 12, textureY + 7),
-				new UVQuad(textureX + 8, textureY, textureX + 12, textureY + 4),
-				new UVQuad(textureX + 4, textureY, textureX + 8, textureY + 4),
-				new UVQuad(textureX + 12, textureY + 4, textureX + 16, textureY + 7)
-		);
-	}
-
 	@Override
 	protected void setupTransformations(S state, M model, PoseStack matrixStack, BreastSide side) {
 		if(state.isBaby) {
@@ -259,11 +219,14 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 			matrixStack.translate(0, 0.75, 0);
 		}
 
+		applyTorsoTransform(model, matrixStack);
 		if(realisticModel) {
-			applyTorsoTransform(model, matrixStack);
 			matrixStack.translate(0, -0.0625f, 0);
 		} else {
-			applyLegTransform(model, matrixStack, side);
+			// Keep the old standing position, but inherit the torso pose instead of either
+			// leg's animated rotation. The vanilla leg pivots are +/-1.9, 12 model pixels.
+			matrixStack.translate(side.isLeft ? -CLASSIC_LEG_PIVOT_X : CLASSIC_LEG_PIVOT_X,
+					CLASSIC_LEG_PIVOT_Y, 0);
 		}
 		GenderRenderState.BodyPhysicsState physics = side.isLeft ? leftPhysics : rightPhysics;
 		if(bounceEnabled && !realisticModel) {
@@ -271,14 +234,14 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 		}
 
 		float sideDirection = side.isLeft ? -1 : 1;
-		// Height zero is 1.5 model pixels above the original anchor. Depth zero is
-		// half a pixel inward, matching the previous -5 slider position.
+		// Height zero is 1.5 model pixels above the original anchor. Depth zero
+		// is 0.5 pixels inside the leg, leaving the rounded rear silhouette exposed.
 		if(!realisticModel) {
 			float configuredX = sideDirection * offsetX * 0.0625f;
 			float configuredY = -offsetY * 0.0625f;
 			float configuredZ = offsetZ * 0.0625f;
 			matrixStack.translate(configuredX, -1.5f * 0.0625f + configuredY,
-					0.5f * 0.0625f + configuredZ);
+					-0.5f * 0.0625f + configuredZ);
 		}
 
 		float physicsRotation = bounceEnabled ? physics.getBounceRotation() : 0;

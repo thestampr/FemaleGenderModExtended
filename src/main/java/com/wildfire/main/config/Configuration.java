@@ -28,6 +28,7 @@ import com.wildfire.main.config.types.*;
 import com.wildfire.main.entitydata.Breasts;
 import com.wildfire.main.entitydata.Butts;
 import com.wildfire.main.entitydata.PlayerConfig;
+import com.wildfire.main.uvs.ButtUvLayouts;
 import com.wildfire.main.uvs.UVLayout;
 import com.wildfire.main.uvs.UVQuad;
 import org.jetbrains.annotations.Unmodifiable;
@@ -108,40 +109,16 @@ public class Configuration extends AbstractConfiguration {
 			));
 
 	public static final ConfigKey<UVLayout> LEFT_BUTT_UV_LAYOUT =
-			new UVLayoutConfigKey("leftButtUVLayout", new UVLayout(
-					new UVQuad(28, 31, 30, 32),
-					new UVQuad(18, 31, 20, 32),
-					new UVQuad(20, 31, 24, 32),
-					new UVQuad(20, 26, 24, 27),
-					new UVQuad(32, 31, 36, 32)
-			));
+			new UVLayoutConfigKey("leftButtUVLayout", ButtUvLayouts.torsoWhole(true, false));
 
 	public static final ConfigKey<UVLayout> RIGHT_BUTT_UV_LAYOUT =
-			new UVLayoutConfigKey("rightButtUVLayout", new UVLayout(
-					new UVQuad(30, 31, 32, 32),
-					new UVQuad(16, 31, 18, 32),
-					new UVQuad(24, 31, 28, 32),
-					new UVQuad(24, 26, 28, 27),
-					new UVQuad(36, 31, 40, 32)
-			));
+			new UVLayoutConfigKey("rightButtUVLayout", ButtUvLayouts.torsoWhole(false, false));
 
 	public static final ConfigKey<UVLayout> LEFT_BUTT_OVERLAY_UV_LAYOUT =
-			new UVLayoutConfigKey("leftButtOverlayUVLayout", new UVLayout(
-					new UVQuad(28, 47, 30, 48),
-					new UVQuad(18, 47, 20, 48),
-					new UVQuad(20, 47, 24, 48),
-					new UVQuad(20, 42, 24, 43),
-					new UVQuad(32, 47, 36, 48)
-			));
+			new UVLayoutConfigKey("leftButtOverlayUVLayout", ButtUvLayouts.torsoWhole(true, true));
 
 	public static final ConfigKey<UVLayout> RIGHT_BUTT_OVERLAY_UV_LAYOUT =
-			new UVLayoutConfigKey("rightButtOverlayUVLayout", new UVLayout(
-					new UVQuad(30, 47, 32, 48),
-					new UVQuad(16, 47, 18, 48),
-					new UVQuad(24, 47, 28, 48),
-					new UVQuad(24, 42, 28, 43),
-					new UVQuad(36, 47, 40, 48)
-			));
+			new UVLayoutConfigKey("rightButtOverlayUVLayout", ButtUvLayouts.torsoWhole(false, true));
 
 	// Armor breasts
 	public static final ConfigKey<UVLayout> LEFT_BREAST_ARMOR_UV_LAYOUT =

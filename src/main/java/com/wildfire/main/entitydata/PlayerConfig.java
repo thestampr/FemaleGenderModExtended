@@ -19,6 +19,7 @@
 package com.wildfire.main.entitydata;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.wildfire.gui.screen.BaseWildfireScreen;
 import com.wildfire.main.WildfireGender;
 import com.wildfire.main.WildfireLocalization;
@@ -28,6 +29,7 @@ import com.wildfire.main.config.ClientConfig;
 import com.wildfire.main.config.Configuration;
 import com.wildfire.main.config.enums.Gender;
 import com.wildfire.main.config.types.ConfigKey;
+import com.wildfire.main.uvs.UVLayout;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -42,6 +44,8 @@ import java.util.concurrent.CompletableFuture;
  * A version of {@link EntityConfig} backed by a {@link Configuration} for use with players
  */
 public class PlayerConfig extends EntityConfig {
+	private static final String UNIFIED_BUTT_UV_VERSION = "unifiedButtUvVersion";
+	private static final int CURRENT_BUTT_UV_VERSION = 2;
 
 	/**
 	 * <p>{@code true} if this config should be synced to the connected server on the next attempt</p>
@@ -201,6 +205,7 @@ public class PlayerConfig extends EntityConfig {
 	public JsonObject toJson() {
 		var json = new JsonObject();
 		Configuration.KEYS.forEach(key -> key.dump(this, json));
+		json.addProperty(UNIFIED_BUTT_UV_VERSION, CURRENT_BUTT_UV_VERSION);
 		return json;
 	}
 
@@ -218,8 +223,11 @@ public class PlayerConfig extends EntityConfig {
 	 */
 	public void loadFromDisk(boolean markForSync) {
 		this.syncStatus = SyncStatus.CACHED;
+		cfg.removeParameter(UNIFIED_BUTT_UV_VERSION);
 		cfg.load();
+		boolean migrateSavedUvs = cfg.exists() && buttUvVersion() < CURRENT_BUTT_UV_VERSION;
 		loadFromConfig(markForSync);
+		if(migrateSavedUvs) cfg.save();
 	}
 
 	/**
@@ -228,10 +236,43 @@ public class PlayerConfig extends EntityConfig {
 	 * @param markForSync {@code true} if {@link #needsSync} should be set to true
 	 */
 	public void loadFromConfig(boolean markForSync) {
+		migrateSavedButtUvs();
 		Configuration.KEYS.forEach(key -> key.writeToPlayer(this));
 		if(markForSync) {
 			this.needsSync = true;
 		}
+	}
+
+	private int buttUvVersion() {
+		return cfg.get(UNIFIED_BUTT_UV_VERSION) instanceof JsonPrimitive version && version.isNumber()
+				? version.getAsInt() : 0;
+	}
+
+	private void migrateSavedButtUvs() {
+		int version = buttUvVersion();
+		if(version >= CURRENT_BUTT_UV_VERSION) return;
+		if(version == 1) {
+			// Version 1 assigned the rear torso UV halves to the opposite butt meshes.
+			UVLayout left = cfg.get(Configuration.LEFT_BUTT_UV_LAYOUT);
+			UVLayout right = cfg.get(Configuration.RIGHT_BUTT_UV_LAYOUT);
+			UVLayout leftOverlay = cfg.get(Configuration.LEFT_BUTT_OVERLAY_UV_LAYOUT);
+			UVLayout rightOverlay = cfg.get(Configuration.RIGHT_BUTT_OVERLAY_UV_LAYOUT);
+			cfg.set(Configuration.LEFT_BUTT_UV_LAYOUT, right);
+			cfg.set(Configuration.RIGHT_BUTT_UV_LAYOUT, left);
+			cfg.set(Configuration.LEFT_BUTT_OVERLAY_UV_LAYOUT, rightOverlay);
+			cfg.set(Configuration.RIGHT_BUTT_OVERLAY_UV_LAYOUT, leftOverlay);
+		} else {
+			// The old split UVs cannot express one continuous face; discard them once.
+			cfg.set(Configuration.LEFT_BUTT_UV_LAYOUT, Configuration.LEFT_BUTT_UV_LAYOUT.getDefault());
+			cfg.set(Configuration.RIGHT_BUTT_UV_LAYOUT, Configuration.RIGHT_BUTT_UV_LAYOUT.getDefault());
+			cfg.set(Configuration.LEFT_BUTT_OVERLAY_UV_LAYOUT, Configuration.LEFT_BUTT_OVERLAY_UV_LAYOUT.getDefault());
+			cfg.set(Configuration.RIGHT_BUTT_OVERLAY_UV_LAYOUT, Configuration.RIGHT_BUTT_OVERLAY_UV_LAYOUT.getDefault());
+			cfg.removeParameter("leftButtLowerUVLayout");
+			cfg.removeParameter("rightButtLowerUVLayout");
+			cfg.removeParameter("leftButtLowerOverlayUVLayout");
+			cfg.removeParameter("rightButtLowerOverlayUVLayout");
+		}
+		cfg.set(UNIFIED_BUTT_UV_VERSION, new JsonPrimitive(CURRENT_BUTT_UV_VERSION));
 	}
 
 	/**
@@ -246,6 +287,7 @@ public class PlayerConfig extends EntityConfig {
 	 * and then attempts to {@link Configuration#save() save to disk}.
 	 */
 	public void save() {
+		cfg.set(UNIFIED_BUTT_UV_VERSION, new JsonPrimitive(CURRENT_BUTT_UV_VERSION));
 		writeToConfig();
 		getConfig().save();
 		needsSync = true;
@@ -296,6 +338,7 @@ public class PlayerConfig extends EntityConfig {
 	 * @param json The {@link JsonObject} to merge with the existing config for this player
 	 */
 	public void updateFromJson(JsonObject json) {
+		cfg.removeParameter(UNIFIED_BUTT_UV_VERSION);
 		json.asMap().forEach(this.cfg::set);
 		loadFromConfig(false);
 		this.syncStatus = SyncStatus.SYNCED;

@@ -32,8 +32,8 @@ import java.util.function.IntFunction;
 public enum UVDirection {
 	EAST("east", "", "E", 0xFFFF0000, new Vec3i(1, 0, 0)),
 	WEST("west", "", "W", 0xFF00FF00, new Vec3i(-1, 0, 0)),
-	DOWN("down", "wildfire_gender.uv_editor.faces.bottom", "D", 0xFF0000FF, new Vec3i(0, -1, 0)),
-	UP("up", "wildfire_gender.uv_editor.faces.top", "U", 0xFF00FFFF, new Vec3i(0, 1, 0)),
+	DOWN("down", "wildfire_gender.uv_editor.faces.top", "T", 0xFF0000FF, new Vec3i(0, -1, 0)),
+	UP("up", "wildfire_gender.uv_editor.faces.bottom", "B", 0xFF00FFFF, new Vec3i(0, 1, 0)),
 	NORTH("north", "wildfire_gender.uv_editor.faces.front", "N", 0xFFFF00FF, new Vec3i(0, 0, -1));
 
 	private final String unlocalizedName;
@@ -71,7 +71,8 @@ public enum UVDirection {
 		}
 
 		if (this == EAST || this == WEST) {
-			String key = type.isLeft()
+			boolean innerFace = type.isLeft() ? this == EAST : this == WEST;
+			String key = innerFace
 					? "wildfire_gender.uv_editor.faces.inner"
 					: "wildfire_gender.uv_editor.faces.outer";
 			return Component.translatable(key);
