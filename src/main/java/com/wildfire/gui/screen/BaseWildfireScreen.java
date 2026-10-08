@@ -88,10 +88,18 @@ public abstract class BaseWildfireScreen extends Screen {
 	protected void renderPaperDoll(GuiGraphics ctx, int centerX, int top, int bottom, int size, boolean rearView,
 	                               float offsetX, float offsetY, float physicsX, float physicsY,
 	                               float physicsRotation, float viewYaw, float viewPitch) {
+		renderPaperDoll(ctx, centerX, top, bottom, 116, size, rearView, offsetX, offsetY,
+				physicsX, physicsY, physicsRotation, viewYaw, viewPitch);
+	}
+
+	protected void renderPaperDoll(GuiGraphics ctx, int centerX, int top, int bottom, int frameWidth,
+	                               int size, boolean rearView, float offsetX, float offsetY,
+	                               float physicsX, float physicsY, float physicsRotation,
+	                               float viewYaw, float viewPitch) {
 		var player = minecraft.player;
 		if(player == null) return;
-		GuiUtils.drawEntityFacing(ctx, Math.round(centerX - 58 + offsetX), Math.round(top + offsetY),
-				Math.round(centerX + 58 + offsetX), Math.round(bottom + offsetY), size, rearView, player,
+		GuiUtils.drawEntityFacing(ctx, Math.round(centerX - frameWidth / 2f + offsetX), Math.round(top + offsetY),
+				Math.round(centerX + frameWidth / 2f + offsetX), Math.round(bottom + offsetY), size, rearView, player,
 				physicsX, physicsY, physicsRotation, viewYaw, viewPitch);
 	}
 

@@ -50,11 +50,11 @@ import java.util.concurrent.CompletionException;
 @Environment(EnvType.CLIENT)
 public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
 
-	private static final int MAX_LAYOUT_WIDTH = 420;
-	private static final int PAPER_DOLL_WIDTH = 116;
-	private static final int PAPER_DOLL_RENDER_SIZE = 76;
+	private static final int MAX_LAYOUT_WIDTH = 460;
+	private static final int PAPER_DOLL_WIDTH = 144;
+	private static final int PAPER_DOLL_RENDER_SIZE = 100;
 	private static final int COLUMN_GAP = 16;
-	private static final int PANEL_HEIGHT = 184;
+	private static final int PANEL_HEIGHT = 220;
 	private static final float MAX_DRAG_X = 38;
 	private static final float MAX_DRAG_Y = 30;
 	private static final float MAX_VIEW_YAW = 45;
@@ -74,6 +74,8 @@ public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
 	private int halfWidth;
 	private int tabY;
 	private int panelTop;
+	private int panelHeight;
+	private int paperDollWidth;
 	private int paperDollCenterX;
 	private int paperDollTop;
 	private int paperDollBottom;
@@ -106,16 +108,17 @@ public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
 	public void init() {
 		layoutWidth = Math.min(MAX_LAYOUT_WIDTH, Math.max(300, this.width - 24));
 		layoutX = (this.width - layoutWidth) / 2;
-		int paperDollWidth = Math.min(PAPER_DOLL_WIDTH, Math.max(76, layoutWidth - 220 - COLUMN_GAP));
+		paperDollWidth = Math.min(PAPER_DOLL_WIDTH, Math.max(76, layoutWidth - 220 - COLUMN_GAP));
 		controlsX = layoutX + paperDollWidth + COLUMN_GAP;
 		controlsWidth = layoutWidth - paperDollWidth - COLUMN_GAP;
 		halfWidth = controlsWidth / 2 - 2;
 
-		tabY = Math.max(28, (this.height - PANEL_HEIGHT - 28) / 2);
+		panelHeight = Math.min(PANEL_HEIGHT, Math.max(194, this.height - 46));
+		tabY = Math.max(18, (this.height - panelHeight - 28) / 2);
 		panelTop = tabY + 28;
 		paperDollCenterX = layoutX + paperDollWidth / 2;
 		paperDollTop = panelTop - 4;
-		paperDollBottom = Math.min(this.height - 10, panelTop + PANEL_HEIGHT);
+		paperDollBottom = Math.min(this.height - 8, panelTop + panelHeight);
 		int tabWidth = (layoutWidth - 12) / 4;
 
 		addBackButton();
@@ -657,8 +660,8 @@ public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
 		this.renderTransparentBackground(ctx);
 		if(getPlayer() == null) return;
 
-		ctx.fill(controlsX - 8, panelTop, controlsX + controlsWidth + 8, panelTop + PANEL_HEIGHT, 0xCC181818);
-		ctx.fill(controlsX - 7, panelTop + 1, controlsX + controlsWidth + 7, panelTop + PANEL_HEIGHT - 1, 0x662C2C2C);
+		ctx.fill(controlsX - 8, panelTop, controlsX + controlsWidth + 8, panelTop + panelHeight, 0xCC181818);
+		ctx.fill(controlsX - 7, panelTop + 1, controlsX + controlsWidth + 7, panelTop + panelHeight - 1, 0x662C2C2C);
 		ctx.drawCenteredString(font, getTitle(), controlsX + controlsWidth / 2, tabY - 18, 0xFFFFFF);
 
 		if(currentTab == Tab.BREAST || currentTab == Tab.BUTT) {
@@ -677,7 +680,8 @@ public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
 		}
 
 		boolean rearView = currentTab == Tab.BUTT;
-		renderPaperDoll(ctx, paperDollCenterX, paperDollTop, paperDollBottom, PAPER_DOLL_RENDER_SIZE, rearView,
+		renderPaperDoll(ctx, paperDollCenterX, paperDollTop, paperDollBottom, paperDollWidth,
+				Math.min(PAPER_DOLL_RENDER_SIZE, paperDollBottom - paperDollTop - 8), rearView,
 				paperDollOffsetX, paperDollOffsetY, previewPhysicsX, previewPhysicsY, previewRotation,
 				paperDollYaw, paperDollPitch);
 		if(rotatingPaperDoll) {
@@ -773,8 +777,8 @@ public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
 	}
 
 	private boolean isOverPaperDoll(double mouseX, double mouseY) {
-		double left = paperDollCenterX - 58 + paperDollOffsetX;
-		double right = paperDollCenterX + 58 + paperDollOffsetX;
+		double left = paperDollCenterX - paperDollWidth / 2.0 + paperDollOffsetX;
+		double right = paperDollCenterX + paperDollWidth / 2.0 + paperDollOffsetX;
 		double top = paperDollTop + paperDollOffsetY;
 		double bottom = paperDollBottom + paperDollOffsetY;
 		return mouseX >= left && mouseX <= right && mouseY >= top && mouseY <= bottom;
