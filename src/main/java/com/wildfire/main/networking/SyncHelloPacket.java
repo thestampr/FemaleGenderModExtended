@@ -39,7 +39,7 @@ import java.util.function.Function;
  * @since 5.0.0-Beta.2
  */
 public sealed interface SyncHelloPacket extends CustomPacketPayload {
-	/*static*/ int VERSION = 3;
+	/*static*/ int VERSION = 4;
 
 	int version();
 

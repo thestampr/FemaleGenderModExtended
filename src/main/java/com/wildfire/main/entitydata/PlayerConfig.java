@@ -149,6 +149,10 @@ public class PlayerConfig extends EntityConfig {
 		return updateValue(Configuration.REALISTIC_MODEL, value, v -> this.realisticModel = v);
 	}
 
+	public boolean updateHipsEnabled(boolean value) {
+		return updateValue(Configuration.HIPS_ENABLED, value, v -> this.hipsEnabled = v);
+	}
+
 	/**
 	 * @apiNote The value this method returns has been moved to {@link ClientConfig}, and this method is only
 	 * 			retained for compatibility with mods that use this as a mixin target.
@@ -352,6 +356,7 @@ public class PlayerConfig extends EntityConfig {
 		lines.add("Show in armor: " + showBreastsInArmor());
 		lines.add("Show butt in armor: " + showButtInArmor());
 		lines.add("Realistic model: " + usesRealisticModel());
+		lines.add("Hips enabled: " + hasHipsEnabled());
 		return lines;
 	}
 

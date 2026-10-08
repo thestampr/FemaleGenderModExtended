@@ -99,6 +99,7 @@ public class GenderRenderState {
 	public final float buttSize;
 	public final boolean hasButtPhysics;
 	public final boolean realisticModel;
+	public final boolean hipsEnabled;
 	public final float buttBounceMultiplier;
 	public final float buttFloppyMultiplier;
 	public final float bounceMultiplier;
@@ -179,6 +180,7 @@ public class GenderRenderState {
 		this.buttSize = entityConfig.getButtSize();
 		this.hasButtPhysics = entityConfig.hasButtPhysics();
 		this.realisticModel = entityConfig.usesRealisticModel();
+		this.hipsEnabled = entityConfig.hasHipsEnabled();
 		this.buttBounceMultiplier = entityConfig.getButtBounceMultiplier();
 		this.buttFloppyMultiplier = entityConfig.getButtFloppiness();
 		this.bounceMultiplier = entityConfig.getBounceMultiplier();

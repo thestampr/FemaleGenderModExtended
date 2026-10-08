@@ -71,10 +71,10 @@ abstract class AbstractSyncPacket {
 	}
 
 	protected record CoreProfile(UUID uuid, Gender gender, float bustSize, boolean hurtSounds, float voicePitch,
-	                             boolean realisticModel) {
+	                             boolean realisticModel, boolean hipsEnabled) {
 		private static CoreProfile from(PlayerConfig player) {
 			return new CoreProfile(player.uuid, player.getGender(), player.getBustSize(), player.hasHurtSounds(),
-					player.getVoicePitch(), player.usesRealisticModel());
+					player.getVoicePitch(), player.usesRealisticModel(), player.hasHipsEnabled());
 		}
 
 		private void applyTo(PlayerConfig player) {
@@ -83,6 +83,7 @@ abstract class AbstractSyncPacket {
 			player.updateHurtSounds(hurtSounds);
 			player.updateVoicePitch(voicePitch);
 			player.updateRealisticModel(realisticModel);
+			player.updateHipsEnabled(hipsEnabled);
 		}
 	}
 
@@ -93,6 +94,7 @@ abstract class AbstractSyncPacket {
 			ByteBufCodecs.BOOL, CoreProfile::hurtSounds,
 			ByteBufCodecs.FLOAT, CoreProfile::voicePitch,
 			ByteBufCodecs.BOOL, CoreProfile::realisticModel,
+			ByteBufCodecs.BOOL, CoreProfile::hipsEnabled,
 			CoreProfile::new
 	);
 

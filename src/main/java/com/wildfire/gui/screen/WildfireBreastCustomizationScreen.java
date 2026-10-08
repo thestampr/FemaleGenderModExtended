@@ -640,9 +640,21 @@ public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
 		realisticCheckbox.setTooltip(Tooltip.create(Component.translatable("wildfire_gender.tooltip.realistic")));
 		addRenderableWidget(realisticCheckbox);
 
+		var hipsCheckbox = Checkbox.builder(Component.translatable("wildfire_gender.misc.hips"), font)
+				.pos(controlsX, tabOffsetY + 134)
+				.selected(plr.hasHipsEnabled())
+				.onValueChange((checkbox, selected) -> {
+					plr.updateHipsEnabled(selected);
+					plr.save();
+				})
+				.maxWidth(controlsWidth)
+				.build();
+		hipsCheckbox.setTooltip(Tooltip.create(Component.translatable("wildfire_gender.tooltip.hips")));
+		addRenderableWidget(hipsCheckbox);
+
 		var armorStandPhysicsCheckbox = Checkbox.builder(
 				Component.translatable("wildfire_gender.misc.armor_stand_physics"), font)
-				.pos(controlsX, tabOffsetY + 136)
+				.pos(controlsX, tabOffsetY + 156)
 				.selected(config.get(ClientConfig.ARMOR_STAND_PHYSICS))
 				.onValueChange((checkbox, selected) -> {
 					config.set(ClientConfig.ARMOR_STAND_PHYSICS, selected);

@@ -33,6 +33,7 @@ import com.wildfire.main.networking.WildfireSync;
 import com.wildfire.render.ButtArmorLayer;
 import com.wildfire.render.ButtLayer;
 import com.wildfire.render.GenderArmorLayer;
+import com.wildfire.render.HipLayer;
 import com.wildfire.render.GenderLayer;
 import com.wildfire.render.GenderRenderState;
 import com.wildfire.render.HolidayFeaturesRenderer;
@@ -224,6 +225,7 @@ public final class WildfireEventHandler {
 		if(entityRenderer instanceof AvatarRenderer<?> playerRenderer) {
 			registrationHelper.register(new GenderLayer<>(playerRenderer));
 			registrationHelper.register(new ButtLayer<>(playerRenderer));
+			registrationHelper.register(new HipLayer<>(playerRenderer));
 			registrationHelper.register(new ButtArmorLayer<>(playerRenderer, context.getEquipmentAssets(), context.getEquipmentRenderer()));
 			registrationHelper.register(new GenderArmorLayer<>(playerRenderer, context.getEquipmentAssets(), context.getEquipmentRenderer()));
 			registrationHelper.register(new HolidayFeaturesRenderer(playerRenderer));

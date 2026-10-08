@@ -69,6 +69,7 @@ public class Configuration extends AbstractConfiguration {
 
 	public static final BooleanConfigKey HOLIDAY_THEMES = new BooleanConfigKey("holiday_themes", true);
 	public static final BooleanConfigKey REALISTIC_MODEL = new BooleanConfigKey("experimental_realistic_model", false);
+	public static final BooleanConfigKey HIPS_ENABLED = new BooleanConfigKey("experimental_hips", false);
 
 	// Base breasts
 	public static final ConfigKey<UVLayout> LEFT_BREAST_UV_LAYOUT =
@@ -170,6 +171,7 @@ public class Configuration extends AbstractConfiguration {
 
 			new RegisteredKey<>(HOLIDAY_THEMES, PlayerConfig::hasHolidayThemes, PlayerConfig::updateHolidayThemes),
 			new RegisteredKey<>(REALISTIC_MODEL, PlayerConfig::usesRealisticModel, PlayerConfig::updateRealisticModel),
+			new RegisteredKey<>(HIPS_ENABLED, PlayerConfig::hasHipsEnabled, PlayerConfig::updateHipsEnabled),
 
 			new RegisteredKey<>(LEFT_BREAST_UV_LAYOUT, PlayerConfig::getLeftBreastUVLayout, PlayerConfig::updateLeftBreastUVLayout),
 			new RegisteredKey<>(RIGHT_BREAST_UV_LAYOUT, PlayerConfig::getRightBreastUVLayout, PlayerConfig::updateRightBreastUVLayout),

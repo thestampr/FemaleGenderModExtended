@@ -219,6 +219,8 @@
 	"wildfire_gender.tooltip.holiday_themes.line1": "When enabled, this feature automatically showcases cosmetics like Santa hats and other holiday-themed items during their respective holidays.",
 	"wildfire_gender.section.experimental": "Experimental",
 	"wildfire_gender.misc.realistic": "Realistic (Experimental)",
+	"wildfire_gender.misc.hips": "Hips",
+	"wildfire_gender.tooltip.hips": "Add hip contours to the waist and upper legs. Follows the selected Classic or Realistic model style.",
 	"wildfire_gender.tooltip.realistic": "Experimental: uses seamless rounded, soft-body breast geometry that deforms with your configured physics. Disable this option to restore the classic renderer.",
 	"wildfire_gender.misc.armor_stand_physics": "Armor Stand Physics",
 	"wildfire_gender.tooltip.armor_stand_physics": "Enable breast and butt motion physics on armor stands. Disable this to improve performance when many equipped armor stands are visible.",

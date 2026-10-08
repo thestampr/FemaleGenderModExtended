@@ -77,6 +77,7 @@ public class EntityConfig {
 	protected float buttBounceMultiplier = Configuration.BUTT_BOUNCE_MULTIPLIER.getDefault();
 	protected float buttFloppyMultiplier = Configuration.BUTT_FLOPPY_MULTIPLIER.getDefault();
 	protected boolean realisticModel = Configuration.REALISTIC_MODEL.getDefault();
+	protected boolean hipsEnabled = Configuration.HIPS_ENABLED.getDefault();
 
 	protected UVLayout leftBreastUVLayout = Configuration.LEFT_BREAST_UV_LAYOUT.getDefault();
 	protected UVLayout rightBreastUVLayout = Configuration.RIGHT_BREAST_UV_LAYOUT.getDefault();
@@ -259,6 +260,10 @@ public class EntityConfig {
 
 	public boolean usesRealisticModel() {
 		return realisticModel;
+	}
+
+	public boolean hasHipsEnabled() {
+		return hipsEnabled;
 	}
 
 	/**
