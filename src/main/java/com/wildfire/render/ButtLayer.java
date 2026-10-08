@@ -135,23 +135,24 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 		previousShowInnerFaces = showInnerFaces;
 		previousRealisticModel = state.realisticModel;
 		if(state.realisticModel) {
-			// Each half keeps its two mesh pieces, but samples one continuous torso UV sheet.
+			// Realistic upper geometry is taller than Classic, so its own UV split is
+			// later in the same editable sheet. The Editor and saved layout stay unchanged.
 			leftUpperButt = new ButtModelBox(64, 64, -4, 9, 0, 4, 3, 3, 0,
-					upperLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 5);
+					realisticUpperLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 5);
 			rightUpperButt = new ButtModelBox(64, 64, 0, 9, 0, 4, 3, 3, 0,
-					upperLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 5);
+					realisticUpperLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 5);
 			leftLowerButt = new ButtModelBox(64, 64, -4, 12, 0, 4, 2, 3, 0,
-					lowerLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 3);
+					realisticLowerLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 3);
 			rightLowerButt = new ButtModelBox(64, 64, 0, 12, 0, 4, 2, 3, 0,
-					lowerLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 3);
+					realisticLowerLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 3);
 			leftUpperButtWear = new ButtOverlayModelBox(64, 64, -4, 9, 0, 4, 3, 3, 0,
-					upperLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 5);
+					realisticUpperLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 5);
 			rightUpperButtWear = new ButtOverlayModelBox(64, 64, 0, 9, 0, 4, 3, 3, 0,
-					upperLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 5);
+					realisticUpperLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 5);
 			leftLowerButtWear = new ButtOverlayModelBox(64, 64, -4, 12, 0, 4, 2, 3, 0,
-					lowerLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 3);
+					realisticLowerLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces), true, 9, 14, 8, 3);
 			rightLowerButtWear = new ButtOverlayModelBox(64, 64, 0, 12, 0, 4, 2, 3, 0,
-					lowerLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 3);
+					realisticLowerLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 3);
 
 			// A fixed two-pixel-deep backing occupies only the torso's rear half. Unlike the rounded
 			// shell it has a real rear face and side walls, so oblique views cannot see through the
@@ -203,6 +204,14 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 
 	protected static UVLayout lowerLayout(UVLayout source, BreastSide side, boolean showInnerFaces) {
 		return hideInnerFace(ButtUvLayouts.meshSection(source, false), side, showInnerFaces);
+	}
+
+	protected static UVLayout realisticUpperLayout(UVLayout source, BreastSide side, boolean showInnerFaces) {
+		return hideInnerFace(ButtUvLayouts.realisticMeshSection(source, true), side, showInnerFaces);
+	}
+
+	protected static UVLayout realisticLowerLayout(UVLayout source, BreastSide side, boolean showInnerFaces) {
+		return hideInnerFace(ButtUvLayouts.realisticMeshSection(source, false), side, showInnerFaces);
 	}
 
 	private static UVLayout hideInnerFace(UVLayout layout, BreastSide side, boolean showInnerFaces) {

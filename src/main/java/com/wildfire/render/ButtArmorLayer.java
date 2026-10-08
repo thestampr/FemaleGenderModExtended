@@ -108,8 +108,8 @@ public final class ButtArmorLayer<S extends HumanoidRenderState, M extends Human
 	private static ArmorModels realisticModels(BreastSide side, float delta, boolean includeAttachment) {
 		float x = side.isLeft ? -4 : 0;
 		var sheet = ButtUvLayouts.torsoWhole(side.isLeft, false);
-		var upperUV = upperLayout(sheet, side, true);
-		var lowerUV = lowerLayout(sheet, side, true);
+		var upperUV = realisticUpperLayout(sheet, side, true);
+		var lowerUV = realisticLowerLayout(sheet, side, true);
 		ButtModelBox upper = new ButtModelBox(64, 32, x, 9, 0, 4, 3, 3, delta,
 				upperUV, true, 9, 14, 8, 5);
 		ButtModelBox lower = new ButtModelBox(64, 32, x, 12, 0, 4, 2, 3, delta,

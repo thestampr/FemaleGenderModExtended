@@ -13,12 +13,38 @@ public final class ButtUvLayouts {
 	}
 
 	public static UVLayout meshSection(UVLayout sheet, boolean upper) {
+		return meshSection(sheet, upper, 0.25f);
+	}
+
+	/** The realistic upper mesh is three pixels tall, so give it three texture rows. */
+	public static UVLayout realisticMeshSection(UVLayout sheet, boolean upper) {
+		UVLayout section = meshSection(sheet, upper, 0.75f);
+		// Shift the rendered rows down, but never sample outside the editable face.
+		// The last lower row already touches that boundary; repeat that row instead
+		// of reading transparent pixels from the next area of the skin atlas.
+		for(UVDirection face : UVDirection.values()) {
+			UVQuad quad = section.get(face);
+			UVQuad source = sheet.get(face);
+			if(quad != null && source != null && quad.x1() != quad.x2() && quad.y1() != quad.y2()) {
+				int span = quad.y2() - quad.y1();
+				int low = Math.min(source.y1(), source.y2());
+				int high = Math.max(source.y1(), source.y2());
+				int minStart = span > 0 ? low : low - span;
+				int maxStart = span > 0 ? high - span : high;
+				int start = Math.max(minStart, Math.min(quad.y1() + 1, maxStart));
+				section.put(face, new UVQuad(quad.x1(), start, quad.x2(), start + span));
+			}
+		}
+		return section;
+	}
+
+	private static UVLayout meshSection(UVLayout sheet, boolean upper, float upperFraction) {
 		UVLayout section = sheet.copy();
 		for(UVDirection face : new UVDirection[]{UVDirection.EAST, UVDirection.WEST, UVDirection.NORTH}) {
 			UVQuad quad = sheet.get(face);
 			if(quad == null || quad.y1() == quad.y2()) continue;
 			int span = quad.y2() - quad.y1();
-			int firstRow = Integer.signum(span) * Math.max(1, Math.round(Math.abs(span) / 4f));
+			int firstRow = Integer.signum(span) * Math.max(1, Math.round(Math.abs(span) * upperFraction));
 			int boundary = quad.y1() + firstRow;
 			// A one-pixel custom UV cannot be divided into two integer rectangles;
 			// both mesh pieces sample that row until the face is enlarged in the editor.
@@ -28,6 +54,15 @@ public final class ButtUvLayouts {
 					: new UVQuad(quad.x1(), boundary, quad.x2(), quad.y2()));
 		}
 		section.put(upper ? UVDirection.UP : UVDirection.DOWN, new UVQuad(0, 0, 0, 0));
+		// Both horizontal faces run opposite to the rear face in ModelBox. The
+		// upper piece exposes its top (DOWN), and the lower piece its bottom (UP).
+		// Flip render coordinates only; the editable/saved UV sheet stays intact.
+		UVDirection horizontalFace = upper ? UVDirection.DOWN : UVDirection.UP;
+		UVQuad horizontal = section.get(horizontalFace);
+		if(horizontal != null) {
+			section.put(horizontalFace, new UVQuad(horizontal.x2(), horizontal.y1(),
+					horizontal.x1(), horizontal.y2()));
+		}
 		return section;
 	}
 
