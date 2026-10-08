@@ -165,10 +165,10 @@ public class WildfireCreditsScreen extends BaseWildfireScreen {
 		ctx.fill(x + 6, y + 5, x + 66, y + CARD_HEIGHT - 5, portraitColor);
 
 		int portraitX = x + 36;
-		int portraitAnchorY = y + 88;
+		int portraitAnchorY = y + 64;
 		ctx.enableScissor(x + 6, y + 5, x + 66, y + CARD_HEIGHT - 5);
 		GuiUtils.drawEntityOnScreen(ctx, portraitX - 38, portraitAnchorY - 79, portraitX + 38,
-				portraitAnchorY + 69, 58, mouseX, mouseY + 35, credit.getEntity());
+				portraitAnchorY + 69, 46, mouseX, mouseY + 35, credit.getEntity());
 		ctx.disableScissor();
 
 		int textLeft = x + 75;
