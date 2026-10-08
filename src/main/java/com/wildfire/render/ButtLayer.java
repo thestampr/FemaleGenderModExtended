@@ -38,6 +38,7 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 	private static final float BASE_TILT_DEGREES = 30f;
 	private static final float CLASSIC_LEG_PIVOT_X = 1.9f * 0.0625f;
 	private static final float CLASSIC_LEG_PIVOT_Y = 12f * 0.0625f;
+	protected static final float REALISTIC_ATTACHMENT_Z = -0.5f;
 	private static final UVQuad HIDDEN_FACE = new UVQuad(0, 0, 0, 0);
 
 	@UnknownNullability("null until the first render")
@@ -154,25 +155,24 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 			rightLowerButtWear = new ButtOverlayModelBox(64, 64, 0, 12, 0, 4, 2, 3, 0,
 					realisticLowerLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces), true, 9, 14, 8, 3);
 
-			// A fixed two-pixel-deep backing occupies only the torso's rear half. Unlike the rounded
-			// shell it has a real rear face and side walls, so oblique views cannot see through the
-			// attachment while the established outer silhouette remains unchanged.
-			leftUpperAttachment = new ButtModelBox(64, 64, -4, 9, 0.01f, 4, 3, 2, 0,
-					upperLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces));
-			rightUpperAttachment = new ButtModelBox(64, 64, 0, 9, 0.01f, 4, 3, 2, 0,
-					upperLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces));
-			leftLowerAttachment = new ButtModelBox(64, 64, -4, 12, 0.01f, 4, 2, 2, 0,
-					lowerLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces));
-			rightLowerAttachment = new ButtModelBox(64, 64, 0, 12, 0.01f, 4, 2, 2, 0,
-					lowerLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces));
-			leftUpperAttachmentWear = new ButtOverlayModelBox(64, 64, -4, 9, 0.01f, 4, 3, 2, 0,
-					upperLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces));
-			rightUpperAttachmentWear = new ButtOverlayModelBox(64, 64, 0, 9, 0.01f, 4, 3, 2, 0,
-					upperLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces));
-			leftLowerAttachmentWear = new ButtOverlayModelBox(64, 64, -4, 12, 0.01f, 4, 2, 2, 0,
-					lowerLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces));
-			rightLowerAttachmentWear = new ButtOverlayModelBox(64, 64, 0, 12, 0.01f, 4, 2, 2, 0,
-					lowerLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces));
+			// Keep the backing beneath the torso/leg surface. Its old rear face at z=2.01
+			// protruded past the rounded rim as a flat plate on translucent overlays.
+			leftUpperAttachment = new ButtModelBox(64, 64, -4, 9, REALISTIC_ATTACHMENT_Z, 4, 3, 2, 0,
+					realisticUpperLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces));
+			rightUpperAttachment = new ButtModelBox(64, 64, 0, 9, REALISTIC_ATTACHMENT_Z, 4, 3, 2, 0,
+					realisticUpperLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces));
+			leftLowerAttachment = new ButtModelBox(64, 64, -4, 12, REALISTIC_ATTACHMENT_Z, 4, 2, 2, 0,
+					realisticLowerLayout(state.leftButtUVLayout, BreastSide.LEFT, showInnerFaces));
+			rightLowerAttachment = new ButtModelBox(64, 64, 0, 12, REALISTIC_ATTACHMENT_Z, 4, 2, 2, 0,
+					realisticLowerLayout(state.rightButtUVLayout, BreastSide.RIGHT, showInnerFaces));
+			leftUpperAttachmentWear = new ButtOverlayModelBox(64, 64, -4, 9, REALISTIC_ATTACHMENT_Z, 4, 3, 2, 0,
+					realisticUpperLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces));
+			rightUpperAttachmentWear = new ButtOverlayModelBox(64, 64, 0, 9, REALISTIC_ATTACHMENT_Z, 4, 3, 2, 0,
+					realisticUpperLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces));
+			leftLowerAttachmentWear = new ButtOverlayModelBox(64, 64, -4, 12, REALISTIC_ATTACHMENT_Z, 4, 2, 2, 0,
+					realisticLowerLayout(state.leftButtOverlayUVLayout, BreastSide.LEFT, showInnerFaces));
+			rightLowerAttachmentWear = new ButtOverlayModelBox(64, 64, 0, 12, REALISTIC_ATTACHMENT_Z, 4, 2, 2, 0,
+					realisticLowerLayout(state.rightButtOverlayUVLayout, BreastSide.RIGHT, showInnerFaces));
 			return;
 		}
 
@@ -298,8 +298,15 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 		boolean showPantsOverlay = state instanceof AvatarRenderState playerState
 				&& (side.isLeft ? playerState.showRightPants : playerState.showLeftPants);
 		if(showPantsOverlay) {
-			matrixStack.translate(0, 0, 0.01f);
-			matrixStack.scale(1.04f, 1.04f, 1.04f);
+			if(realisticModel) {
+				matrixStack.translate(0, 11.5f / 16f, 1.5f / 16f);
+				matrixStack.scale(1.04f, 1.04f, 1.04f);
+				matrixStack.translate(0, -11.5f / 16f, -1.5f / 16f);
+				matrixStack.translate(0, 0, 0.01f);
+			} else {
+				matrixStack.translate(0, 0, 0.01f);
+				matrixStack.scale(1.04f, 1.04f, 1.04f);
+			}
 			int overlayAlpha = uvPreviewOverlayAlpha(state, alpha);
 			int overlayColor = ARGB.color(overlayAlpha, 255, 255, 255);
 			var overlayFaceColors = uvPreviewFaceColors(state, side, overlayAlpha, 255);

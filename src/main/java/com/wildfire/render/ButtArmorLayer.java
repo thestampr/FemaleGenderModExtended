@@ -116,8 +116,8 @@ public final class ButtArmorLayer<S extends HumanoidRenderState, M extends Human
 				lowerUV, true, 9, 14, 8, 3);
 		if(!includeAttachment) return new ArmorModels(upper, lower, null, null);
 
-		ButtModelBox upperAttachment = new ButtModelBox(64, 32, x, 9, 0.01f, 4, 3, 2, delta, upperUV);
-		ButtModelBox lowerAttachment = new ButtModelBox(64, 32, x, 12, 0.01f, 4, 2, 2, delta, lowerUV);
+		ButtModelBox upperAttachment = new ButtModelBox(64, 32, x, 9, REALISTIC_ATTACHMENT_Z, 4, 3, 2, delta, upperUV);
+		ButtModelBox lowerAttachment = new ButtModelBox(64, 32, x, 12, REALISTIC_ATTACHMENT_Z, 4, 2, 2, delta, lowerUV);
 		return new ArmorModels(upper, lower, upperAttachment, lowerAttachment);
 	}
 
