@@ -312,7 +312,7 @@ public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
 
 	private float previewMomentum() {
 		PlayerConfig player = getPlayer();
-		if(player == null) return 0.75f;
+		if(player == null) return 1f;
 		return currentTab == Tab.BUTT ? player.getButtFloppiness() : player.getFloppiness();
 	}
 

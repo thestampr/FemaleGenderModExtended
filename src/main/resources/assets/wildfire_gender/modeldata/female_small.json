@@ -10,7 +10,7 @@
 	"breasts_cleavage": 0.05,
 	"breast_physics": true,
 	"show_in_armor": true,
-	"bounce_multiplier": 0.33,
-	"floppy_multiplier": 0.75,
+	"bounce_multiplier": 0.333,
+	"floppy_multiplier": 1.0,
 	"holiday_themes": false
 }

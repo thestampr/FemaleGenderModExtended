@@ -436,13 +436,8 @@ public class EntityConfig {
 			getLeftBreastPhysics().update(entity, chestArmor, animationMotion.breasts());
 			getRightBreastPhysics().update(entity, chestArmor, animationMotion.breasts());
 		}
-		if(usesRealisticModel()) {
-			getLeftButtPhysics().update(entity, leggings, animationMotion.realisticButt());
-			getRightButtPhysics().update(entity, leggings, animationMotion.realisticButt());
-		} else {
-			getLeftButtPhysics().update(entity, leggings, animationMotion.leftClassicButt());
-			getRightButtPhysics().update(entity, leggings, animationMotion.rightClassicButt());
-		}
+		getLeftButtPhysics().update(entity, leggings, animationMotion.butt());
+		getRightButtPhysics().update(entity, leggings, animationMotion.butt());
 	}
 
 	@Override

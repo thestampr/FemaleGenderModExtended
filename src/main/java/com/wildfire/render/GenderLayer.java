@@ -294,7 +294,7 @@ public class GenderLayer<S extends HumanoidRenderState, M extends HumanoidModel<
 		if(state instanceof AvatarRenderState playerState && playerState.showJacket
 				&& (!realisticModel || armorStack.isEmpty() || !genderArmor.coversBreasts())) {
 			matrixStack.translate(0, 0, -0.015f);
-			matrixStack.scale(1.05f, 1.05f, 1.05f);
+			matrixStack.scale(realisticModel ? 1f : 1.05f, 1.05f, 1.05f);
 			var jacketModel = side.isLeft ? lBreastWear : rBreastWear;
 			int overlayAlpha = uvPreviewOverlayAlpha(state, alpha);
 			int overlayColor = ARGB.color(overlayAlpha, 255, 255, 255);

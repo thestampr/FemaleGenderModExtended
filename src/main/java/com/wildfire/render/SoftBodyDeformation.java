@@ -135,7 +135,10 @@ public final class SoftBodyDeformation {
 	                       WildfireModelRenderer.ModelBox model, Vector3f result) {
 		float influence = influenceFor(vertex, model);
 		if(influence <= 0.00001f) {
-			return result.set(vertex.x(), vertex.y(), vertex.z());
+			result.set(vertex.x(), vertex.y(), vertex.z());
+			if(form == Form.BUTT) clampButtWidth(result, model, 0);
+			else if(form == Form.BREAST) clampBreastBaseWidth(result, model, 0);
+			return result;
 		}
 
 		float centerX = (model.posX1 + model.posX2) * 0.5f;
@@ -184,8 +187,10 @@ public final class SoftBodyDeformation {
 				attachmentZ + localZ + configuredZ * influence);
 		if(form == Form.BREAST) {
 			shapeBreastCleavage(result, vertex, model, influence);
+			clampBreastBaseWidth(result, model, influence);
 		} else if(form == Form.BUTT) {
 			shapeButtJoin(result, vertex, model, influence);
+			clampButtWidth(result, model, influence);
 		}
 		return result;
 	}
@@ -275,9 +280,9 @@ public final class SoftBodyDeformation {
 		float sealStage = Mth.clamp(1f - separation, 0, 2);
 		float extraSeal = smoothStep(Mth.clamp(sealStage, 0, 1));
 		float deepSeal = smoothStep(Mth.clamp(sealStage - 1f, 0, 1));
-		// The former -10 result combined 1.0 unit of positional movement with 1.55 units
-		// of form deformation. It is now the zero point; -10 adds a third sealing stage.
-		float joinStrength = 2.55f + 0.55f * extraSeal + 0.65f * deepSeal;
+		// Keep a hidden center seal without pulling the two free lobes so far through
+		// each other that their rounded silhouettes flatten at the join.
+		float joinStrength = 2.1f + 0.4f * extraSeal + 0.5f * deepSeal;
 		float formWeight = innerWeight * (0.35f + influence * 0.65f);
 		// Offset diagonally through the leg: toward the center, slightly upward, and inward.
 		// The hidden overlap joins the silhouette without emerging through the opposite lobe.
@@ -290,6 +295,37 @@ public final class SoftBodyDeformation {
 				* (1f - influence * 0.3f);
 		float rotationCompensation = absoluteBendYSin * width * 0.5f;
 		result.z -= rotationCompensation * smoothStep(Mth.sqrt(innerWeight)) * influence;
+	}
+
+	private void clampButtWidth(Vector3f result, WildfireModelRenderer.ModelBox model, float influence) {
+		// The rounded source mesh is wider than its 4 px attachment even before deformation.
+		// Keep that torso-side rim inside the torso, but let the free lobe bulge outward.
+		float width = model.posX2 - model.posX1;
+		float tipProgress = smoothStep(Mth.clamp((influence - 0.5f) * 2f, 0, 1));
+		float outerAllowance = width * 4f * tipProgress;
+		// Compress the crossing smoothly instead of creating a flat cut at the seam.
+		// The two halves together can overlap by less than one model pixel.
+		float halfOverlapLimit = 0.5f;
+		if(sideDirection < 0) {
+			result.x = Math.max(result.x, model.posX1 - outerAllowance);
+			if(result.x > 0) result.x = halfOverlapLimit * (1f - (float)Math.exp(-result.x / halfOverlapLimit));
+		} else {
+			result.x = Math.min(result.x, model.posX2 + outerAllowance);
+			if(result.x < 0) result.x = -halfOverlapLimit * (1f - (float)Math.exp(result.x / halfOverlapLimit));
+		}
+	}
+
+	private static void clampBreastBaseWidth(Vector3f result, WildfireModelRenderer.ModelBox model,
+	                                         float influence) {
+		// The rounded attachment starts wider and higher than the torso. Keep its
+		// outer rim inside the body and release the limit toward the free surface.
+		float width = model.posX2 - model.posX1;
+		float tipProgress = smoothStep(Mth.clamp((influence - 0.5f) * 2f, 0, 1));
+		float outerAllowance = width * 4f * tipProgress;
+		result.x = model.posX2 <= 0
+				? Math.max(result.x, model.posX1 - outerAllowance)
+				: Math.min(result.x, model.posX2 + outerAllowance);
+		result.y = Math.max(result.y, model.posY1 - outerAllowance);
 	}
 
 	private static float smoothStep(float value) {

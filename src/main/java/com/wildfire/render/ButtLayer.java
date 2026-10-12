@@ -29,6 +29,8 @@ import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
 import org.joml.Quaternionf;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import java.util.Objects;
 
@@ -38,6 +40,9 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 	private static final float BASE_TILT_DEGREES = 30f;
 	private static final float CLASSIC_LEG_PIVOT_X = 1.9f * 0.0625f;
 	private static final float CLASSIC_LEG_PIVOT_Y = 12f * 0.0625f;
+	private static final float LEG_PULL_AT_FULL_INTENSITY = 0.1f;
+	private static final float LEG_SAMPLE_BELOW_HIP = 3f;
+	private static final LegInfluence NO_LEG_INFLUENCE = new LegInfluence(new Vector3f(), 0);
 	protected static final float REALISTIC_ATTACHMENT_Z = -0.5f;
 	private static final UVQuad HIDDEN_FACE = new UVQuad(0, 0, 0, 0);
 
@@ -69,6 +74,8 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 	protected boolean cacheStaticDeformation;
 	protected GenderRenderState.@UnknownNullability BodyPhysicsState leftPhysics;
 	protected GenderRenderState.@UnknownNullability BodyPhysicsState rightPhysics;
+	private Vector3f leftLegPull = new Vector3f(), rightLegPull = new Vector3f();
+	private float leftLegPitch, rightLegPitch;
 
 	public ButtLayer(RenderLayerParent<S, M> render) {
 		super(render);
@@ -98,7 +105,8 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 		if(!genderState.showButtInArmor && !state.legsEquipment.isEmpty()) return false;
 
 		leftPhysics = genderState.leftButtPhysics;
-		rightPhysics = genderState.butts.linkedPhysics ? leftPhysics : genderState.rightButtPhysics;
+		// Both sides retain their own small leg-driven response, even when the main bounce is linked.
+		rightPhysics = genderState.rightButtPhysics;
 		size = leftPhysics.getSize();
 		if(size < 0.02f) return false;
 
@@ -229,9 +237,25 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 		}
 
 		applyTorsoTransform(model, matrixStack);
+		// Leg pull is part of butt physics, not a permanent attachment to the leg.
+		LegInfluence legInfluence = bounceEnabled
+				? legInfluence(model, side, physicsIntensity)
+				: NO_LEG_INFLUENCE;
+		Vector3f legPull = legInfluence.pull();
+		if(side.isLeft) {
+			leftLegPull = legPull;
+			leftLegPitch = legInfluence.pitch();
+		} else {
+			rightLegPull = legPull;
+			rightLegPitch = legInfluence.pitch();
+		}
+		GenderRenderState genderState = GenderRenderState.get(state);
+		if(genderState != null) genderState.captureButtLegPull(side, legPull, legInfluence.pitch());
 		if(realisticModel) {
+			// The attachment stays on the torso; only the free surface receives leg motion.
 			matrixStack.translate(0, -0.0625f, 0);
 		} else {
+			matrixStack.translate(legPull.x, legPull.y, legPull.z);
 			// Keep the old standing position, but inherit the torso pose instead of either
 			// leg's animated rotation. The vanilla leg pivots are +/-1.9, 12 model pixels.
 			matrixStack.translate(side.isLeft ? -CLASSIC_LEG_PIVOT_X : CLASSIC_LEG_PIVOT_X,
@@ -257,7 +281,8 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 		if(!realisticModel) {
 			matrixStack.mulPose(new Quaternionf()
 					.rotationY(sideDirection * outwardAngle * DEG_TO_RAD)
-					.rotateX((BASE_TILT_DEGREES + physicsRotation * 0.35f) * DEG_TO_RAD));
+					.rotateX((BASE_TILT_DEGREES + physicsRotation * 0.35f) * DEG_TO_RAD
+							+ legInfluence.pitch()));
 		}
 
 		if(!realisticModel) {
@@ -270,6 +295,34 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 			matrixStack.translate(0, -0.0625f, 0);
 		}
 	}
+
+	/** Samples the upper leg in torso space, keeping the butt attached to the torso rather than rotating with the leg. */
+	private static <S extends HumanoidRenderState, M extends HumanoidModel<S>> LegInfluence legInfluence(
+			M model, BreastSide side, float intensity) {
+		var leg = side.isLeft ? model.rightLeg : model.leftLeg;
+		PoseStack torsoPose = new PoseStack();
+		model.root().translateAndRotate(torsoPose);
+		model.body.translateAndRotate(torsoPose);
+		Matrix4f inverseTorso = new Matrix4f(torsoPose.last().pose()).invert();
+
+		PoseStack legPose = new PoseStack();
+		model.root().translateAndRotate(legPose);
+		leg.translateAndRotate(legPose);
+		Vector3f sample = new Vector3f(0, LEG_SAMPLE_BELOW_HIP / 16f, 0)
+				.mulPosition(legPose.last().pose())
+				.mulPosition(inverseTorso);
+		// Intensity is stored at one third of the percentage shown in the GUI.
+		float weight = LEG_PULL_AT_FULL_INTENSITY * Mth.clamp(intensity * 3f, 0, 2);
+		Vector3f pull = sample.sub(leg.x / 16f, (leg.y + LEG_SAMPLE_BELOW_HIP) / 16f, leg.z / 16f)
+				.mul(weight);
+		Vector3f forward = new Vector3f(0, 0, 1)
+				.mulDirection(legPose.last().pose())
+				.mulDirection(inverseTorso);
+		float pitch = (float)Math.atan2(-forward.y, forward.z) * weight;
+		return new LegInfluence(pull, pitch);
+	}
+
+	private record LegInfluence(Vector3f pull, float pitch) {}
 
 	private void renderButt(S state, PoseStack matrixStack, SubmitNodeCollector queue, int overlay, BreastSide side) {
 		RenderType renderLayer = getRenderLayer(state);
@@ -300,7 +353,7 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 		if(showPantsOverlay) {
 			if(realisticModel) {
 				matrixStack.translate(0, 11.5f / 16f, 1.5f / 16f);
-				matrixStack.scale(1.04f, 1.04f, 1.04f);
+				matrixStack.scale(1f, 1.04f, 1.04f);
 				matrixStack.translate(0, -11.5f / 16f, -1.5f / 16f);
 				matrixStack.translate(0, 0, 0.01f);
 			} else {
@@ -337,10 +390,12 @@ public class ButtLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>
 		// The new displayed 100% is 110% of the preceding experimental revision.
 		float shapeScale = net.minecraft.util.Mth.clamp(size * 1.287f, 0.15f, 2f);
 		float heightControlledPitch = offsetY * 8f;
-		float realisticDropAngle = -13f + heightControlledPitch;
-		float configuredZ = offsetZ * 0.68f;
+		float legPitch = side.isLeft ? leftLegPitch : rightLegPitch;
+		float realisticDropAngle = -13f + heightControlledPitch + legPitch / DEG_TO_RAD;
+		Vector3f legPull = side.isLeft ? leftLegPull : rightLegPull;
+		float configuredZ = offsetZ * 0.68f + legPull.z * 16f;
 		SoftBodyDeformation deformation = SoftBodyDeformation.butt(motionX, motionY, physicsRotation,
-				physicsIntensity, physicsMomentum, 0, 0, configuredZ,
+				physicsIntensity, physicsMomentum, legPull.x * 16f, legPull.y * 16f, configuredZ,
 				realisticDropAngle, sideDirection * outwardAngle,
 				shapeScale, offsetX, sideDirection);
 		return cacheStaticDeformation ? deformation.cacheResult() : deformation;

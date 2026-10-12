@@ -11,6 +11,6 @@
 	"breast_physics": true,
 	"show_in_armor": true,
 	"bounce_multiplier": 0.3328767,
-	"floppy_multiplier": 0.75,
+	"floppy_multiplier": 1.0,
 	"holiday_themes": false
 }

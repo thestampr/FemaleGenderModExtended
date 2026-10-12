@@ -53,7 +53,7 @@ public class Configuration extends AbstractConfiguration {
 	public static final BooleanConfigKey BREAST_PHYSICS = new BooleanConfigKey("breast_physics", true);
 	public static final BooleanConfigKey SHOW_IN_ARMOR = new BooleanConfigKey("show_in_armor", true);
 	public static final FloatConfigKey BOUNCE_MULTIPLIER = new FloatConfigKey("bounce_multiplier", 0.333F, 0, 0.6667f);
-	public static final FloatConfigKey FLOPPY_MULTIPLIER = new FloatConfigKey("floppy_multiplier", 0.75F, 0.25f, 2);
+	public static final FloatConfigKey FLOPPY_MULTIPLIER = new FloatConfigKey("floppy_multiplier", 1.0F, 0.25f, 2);
 
 	public static final FloatConfigKey BUTT_SIZE = new FloatConfigKey("butt_size", 0.45F, 0, 1.6f);
 	public static final FloatConfigKey BUTTS_OFFSET_X = new FloatConfigKey("butts_xOffset", 0.0F, -1, 1);
@@ -64,8 +64,8 @@ public class Configuration extends AbstractConfiguration {
 
 	public static final BooleanConfigKey BUTT_PHYSICS = new BooleanConfigKey("butt_physics", true);
 	public static final BooleanConfigKey SHOW_BUTT_IN_ARMOR = new BooleanConfigKey("show_butt_in_armor", true);
-	public static final FloatConfigKey BUTT_BOUNCE_MULTIPLIER = new FloatConfigKey("butt_bounce_multiplier", 0.25F, 0, 0.6667f);
-	public static final FloatConfigKey BUTT_FLOPPY_MULTIPLIER = new FloatConfigKey("butt_floppy_multiplier", 0.8F, 0.25f, 2);
+	public static final FloatConfigKey BUTT_BOUNCE_MULTIPLIER = new FloatConfigKey("butt_bounce_multiplier", 0.333F, 0, 0.6667f);
+	public static final FloatConfigKey BUTT_FLOPPY_MULTIPLIER = new FloatConfigKey("butt_floppy_multiplier", 1.0F, 0.25f, 2);
 
 	public static final BooleanConfigKey HOLIDAY_THEMES = new BooleanConfigKey("holiday_themes", true);
 	public static final BooleanConfigKey REALISTIC_MODEL = new BooleanConfigKey("experimental_realistic_model", false);

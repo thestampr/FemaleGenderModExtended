@@ -113,16 +113,14 @@ public final class CustomAnimationPhysics {
 		}
 	}
 
-	public record PoseSnapshot(BonePose body, BonePose torso, BonePose leftLeg, BonePose rightLeg) {}
+	public record PoseSnapshot(BonePose body, BonePose torso) {}
 
 	public record AnimationImpulse(float vertical, float horizontal, float rotation) {
 		public static final AnimationImpulse NONE = new AnimationImpulse(0, 0, 0);
 	}
 
-	public record AnimationMotion(AnimationImpulse breasts, AnimationImpulse realisticButt,
-	                              AnimationImpulse leftClassicButt, AnimationImpulse rightClassicButt) {
-		public static final AnimationMotion NONE = new AnimationMotion(AnimationImpulse.NONE, AnimationImpulse.NONE,
-				AnimationImpulse.NONE, AnimationImpulse.NONE);
+	public record AnimationMotion(AnimationImpulse breasts, AnimationImpulse butt) {
+		public static final AnimationMotion NONE = new AnimationMotion(AnimationImpulse.NONE, AnimationImpulse.NONE);
 	}
 
 	private record BoneDelta(float x, float y, float z, float xRotation, float yRotation, float zRotation) {
@@ -147,8 +145,6 @@ public final class CustomAnimationPhysics {
 		private long lastSeenGameTime;
 		private BoneDelta pendingBody = BoneDelta.ZERO;
 		private BoneDelta pendingTorso = BoneDelta.ZERO;
-		private BoneDelta pendingLeftLeg = BoneDelta.ZERO;
-		private BoneDelta pendingRightLeg = BoneDelta.ZERO;
 
 		private void capture(float sampleTime, long gameTime, PoseSnapshot pose) {
 			lastSeenGameTime = gameTime;
@@ -166,8 +162,6 @@ public final class CustomAnimationPhysics {
 
 			pendingBody = pendingBody.add(pose.body().delta(previousPose.body()));
 			pendingTorso = pendingTorso.add(pose.torso().delta(previousPose.torso()));
-			pendingLeftLeg = pendingLeftLeg.add(pose.leftLeg().delta(previousPose.leftLeg()));
-			pendingRightLeg = pendingRightLeg.add(pose.rightLeg().delta(previousPose.rightLeg()));
 			previousPose = pose;
 			previousSampleTime = sampleTime;
 		}
@@ -178,12 +172,9 @@ public final class CustomAnimationPhysics {
 
 		private AnimationMotion consume() {
 			BoneDelta upperBody = pendingBody.add(pendingTorso);
-			AnimationMotion motion = new AnimationMotion(
-					upperBody.toImpulse(),
-					pendingBody.toImpulse(),
-					pendingBody.add(pendingRightLeg).toImpulse(),
-					pendingBody.add(pendingLeftLeg).toImpulse()
-			);
+			// Leg motion is sampled from the rendered leg pose by ButtLayer, at its actual
+			// 5-10% pull. Applying the full PAL leg delta here would double-count it.
+			AnimationMotion motion = new AnimationMotion(upperBody.toImpulse(), pendingBody.toImpulse());
 			clearPendingMotion();
 			return motion;
 		}
@@ -197,8 +188,6 @@ public final class CustomAnimationPhysics {
 		private void clearPendingMotion() {
 			pendingBody = BoneDelta.ZERO;
 			pendingTorso = BoneDelta.ZERO;
-			pendingLeftLeg = BoneDelta.ZERO;
-			pendingRightLeg = BoneDelta.ZERO;
 		}
 	}
 

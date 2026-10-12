@@ -27,6 +27,7 @@ import com.wildfire.main.entitydata.PlayerConfig;
 import com.wildfire.main.uvs.UVLayout;
 import com.wildfire.main.uvs.UvEditorFeedback;
 import com.wildfire.physics.BodyPhysics;
+import com.wildfire.physics.ButtPhysics;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.rendering.v1.RenderStateDataKey;
@@ -41,6 +42,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.level.block.Blocks;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3f;
 
 import java.util.UUID;
 
@@ -86,6 +88,8 @@ public class GenderRenderState {
 	public final BodyPhysicsState rightBreastPhysics;
 	public final BodyPhysicsState leftButtPhysics;
 	public final BodyPhysicsState rightButtPhysics;
+	private final ButtPhysics leftButtSource;
+	private final ButtPhysics rightButtSource;
 
 	public final float partialTicks;
 	public final float animationSampleTime;
@@ -160,13 +164,21 @@ public class GenderRenderState {
 		this.rightButtOverlayUVLayout = rightOverlay.copy();
 	}
 
+	public void captureButtLegPull(BreastSide side, Vector3f pull, float pitch) {
+		(side.isLeft ? leftButtSource : rightButtSource).captureLegPull(
+				pull.x * 16f, pull.y * 16f, pull.z * 16f,
+				(float)Math.toDegrees(pitch), animationSampleTime);
+	}
+
 	private GenderRenderState(EntityConfig entityConfig, LivingEntity entity) {
 		this.breasts = new BreastState(entityConfig.getBreasts());
 		this.butts = new ButtState(entityConfig.getButts());
 		this.leftBreastPhysics = new BodyPhysicsState(entityConfig.getLeftBreastPhysics());
 		this.rightBreastPhysics = new BodyPhysicsState(entityConfig.getRightBreastPhysics());
-		this.leftButtPhysics = new BodyPhysicsState(entityConfig.getLeftButtPhysics());
-		this.rightButtPhysics = new BodyPhysicsState(entityConfig.getRightButtPhysics());
+		this.leftButtSource = entityConfig.getLeftButtPhysics();
+		this.rightButtSource = entityConfig.getRightButtPhysics();
+		this.leftButtPhysics = new BodyPhysicsState(leftButtSource);
+		this.rightButtPhysics = new BodyPhysicsState(rightButtSource);
 
 		this.partialTicks = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
 		this.animationSampleTime = entity.tickCount + partialTicks;

@@ -23,12 +23,7 @@ public final class PalAnimationPoseReader implements PoseReader {
 		AvatarAnimManager manager = PlayerAnimationAccess.getPlayerAnimManager(avatar);
 		if(!manager.isActive()) return null;
 
-		return new PoseSnapshot(
-				readBone(manager, "body"),
-				readBone(manager, "torso"),
-				readBone(manager, "left_leg"),
-				readBone(manager, "right_leg")
-		);
+		return new PoseSnapshot(readBone(manager, "body"), readBone(manager, "torso"));
 	}
 
 	private static BonePose readBone(AvatarAnimManager manager, String name) {
